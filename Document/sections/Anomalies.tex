@@ -1,0 +1,552 @@
+
+
+As we explained in Chapter \ref{headways}, maintaining the headways as regular as possible is crucial to provide a good service in every public transport. In order to do that, we first need to be able to detect anomalous situations, then we should identify what has caused the anomaly, and finally, try to solve or correct it.
+
+The detection of anomalies on the headways consists of an unsupervised machine learning problem, as we are looking for anomalous patterns in a data set with no pre-existing labels and with a minimum of human supervision. In contrast to supervised learning that makes use of human-labeled data, unsupervised learning relies on the modeling of probability densities over inputs \cite{unsupervisedml}.
+
+In this chapter we are going to focus in the problem of the real-time detection of the anomalies, first characterizing the headways behaviour, and finally developing a real-time detection model that solves the anomaly detection problem.
+
+
+\section{First approach to the problem}
+
+Although we could analyze the headways as independent values, we would be losing important information because the values of consecutive headways are correlated. For a group of three consecutive buses ($b_1,b_2,b_3$), if $b_2$ (and only $b_2$) is delayed, the headway with $b_1$ ($\hw{1}{2}$) will increase and the headway with $b_3$ ($\hw{2}{3}$) will decrease. If we were only focusing in the value of $\hw{1}{2}$, we might consider it rare as it is higher than it should, while if we focus on both values the behaviour makes sense. 
+
+This reasoning can be extended to longer groups of buses, so the more consecutive headways between buses we analyze together the more information we have in order to consider them as anomalous or not. Because of that, in order to get the maximum information possible, we should analyze together all the headways between the buses that are inside a line direction.
+
+\subsection{Headways as a vector}
+
+If we have a group of $m$ buses driving along one of the directions of a line, we can interpret the time intervals between them as an ordered vector of $(m-1)$ elements, which starts with the time interval between the first two buses ($\hw{1}{2}$) and ends with the time interval between the last two buses ($\hw{(m-1)}{m}$). 
+
+Thus, for every instant $t_i$, we have two vectors for each line $l$, one for each of its directions $d$. We can define the vector of headways as:
+
+\def\hwvector{
+    \begin{bmatrix}
+       \hw{1}{2} & \hw{2}{3} & \cdots & \hw{(m-1)}{m}
+    \end{bmatrix}
+}
+
+\begin{equation}
+    H_{l,d,m}(t_i) = \hwvector \; \; \forall m \in \mathbb{N} , m>1
+\end{equation}
+
+where the dependency on $l$, $d$ and $m$ has not been made explicit in the right hand side, for simplifying the notation.
+Note that number $m$ (number of running buses) is not a selected variable but a resulting one which should be greater than 1 (to define a headway we need at least two buses). If $m$ had a constant value along time, we could build a $(m-1)$ dimensional model based on the vectors of headways obtained in the past to determine whether the vectors in real time are anomalous or not.
+But this is not the case, since $m$ is a variable that takes different values for each line, type of day and hour depending mainly on three factors: 
+
+\begin{itemize}
+    \item \textbf{Frequency of passing buses: }higher frequencies mean that the headways are lower and thus require more buses to be inside the line. This frequency usually has a fixed value for each line depending on the type of day and the hour of the day.
+    \item \textbf{Length of the line: }for a fixed frequency of passing buses, a long line requires more buses to be inside than a short line will.
+    \item \textbf{Traffic conditions of the line: }if the traffic conditions are bad, the time required to travel from the first stop to the last stop of the line will increase and thus we will need more buses to match a fixed frequency.
+\end{itemize}
+
+But $m$ also varies inside a given line, type of day and hour range, even if we assume that the headways are intended to remain constant. 
+
+Imagine that the mean time it gets to go from the first to the last stop of one line direction is $2200$ seconds, if the headways between buses are fixed to be around $700$ seconds, depending on how the buses are distributed, we can have 2 or 3 buses inside, and even a different number if we consider that there might be irregularities.
+
+As we can not simply build a $(m-1)$ dimensional model to analyze the vectors, we need to approach the problem in a different way, which consists of dividing the headways vector into slices.
+
+\subsection{Sliding window over the headways vector}
+
+Based on the previous analysis, we separately compute the headways vectors corresponding to each specific value of line, type of day and hours interval. The size of these vectors is mostly around two values (as we explained before) and as expected it has a higher variance and number of instances the wider the interval is. This is shown in figures \ref{fig:busesinsideline2} and \ref{fig:busesinsideline1}:
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{../images/busesinsideline2.png}
+  \caption{From 7:00 to 11:00.}
+  \label{fig:busesinsideline2}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=0.99\linewidth]{../images/busesinsideline1.png}
+  \caption{From 10:00 to 11:00.}
+  \label{fig:busesinsideline1}
+\end{subfigure}
+\caption{Headways vector size for line 1 in LA days.}
+\label{fig:test}
+\end{figure}
+
+
+In order to build a model that characterizes the behavior of each vector size for the 1 hour interval, it is required to have a suitable amount of data, which is not the case for the vector sizes 1, 2, 5 and 6 as they have less than 100 instances. 
+
+So if we had 1, 2, 5 or 6 buses inside the line when using the model in real-time, we would not be able to determine whether the headways vectors are anomalous or not.
+
+In order to address this problem, we can divide each headways vector in smaller slices. Given the headways vector:
+
+\begin{equation}
+    H_{l,d,m} = \hwvector\; \; \forall m \in \mathbb{N} , m>1
+\end{equation}
+whose size or number of elements is $n = (m-1)$. We can define a slice of this vector with two parameters, the size of the slice $k$ and the starting index of the slice inside the vector $i$, so that:
+
+\def\hwslice{
+    \begin{bmatrix}
+        \hw{i}{(i+1)} & \hw{(i+1)}{(i+2)} & \cdots & \hw{(k+i-1)}{(k+i)}
+    \end{bmatrix}
+}
+
+\begin{gather}
+    H^{slice}_{l,d,m,k,i} = \hwslice; \\
+    1 \leq k \leq n; \nonumber\\
+    1 \leq i \leq n-k+1  \nonumber
+\end{gather}
+
+Thus, we can define a sliding window ($sw$) of size $k$ over the headways vector to obtain the set of all the possible $(n-k+1)$ different slices of size $k$ that we can extract from a vector of size $n$.  It can be interpreted as the following matrix:
+
+\def\hwswa{
+    \begin{bmatrix}
+        H^{slice}_{l,d,m,k,1}\\
+        H^{slice}_{l,d,m,k,2} \\
+        \vdots \\
+        H^{slice}_{l,d,m,k,(n-k+1)} \\
+    \end{bmatrix}
+}
+
+\def\hwswb{
+    \begin{bmatrix}
+        \hw{1}{2} & \hw{2}{3} & \cdots & \hw{k}{(k+1)} \\ 
+        \hw{2}{3} & \hw{3}{4} & \cdots & \hw{(k+1)}{(k+2)} \\
+        \vdots & \vdots & \ddots & \vdots \\
+        \hw{(n-k+1)}{(n-k+2)} & \hw{(n-k+2)}{(n-k+3)} & \cdots & \hw{n}{(n+1)} \\
+    \end{bmatrix}
+}
+{\small
+\begin{gather}
+        H^{sw}_{l,d,m,k} = \hwswa = \hwswb
+\end{gather}}
+
+So now we are able to apply these $k$ dimensional windows to all the real-time situations where we have more than $(k+1)$ buses inside the line. If we call $N_{n}$, the sample size for each vector of size $n$ and $n_{\max}$ the maximum size of the headways vectors in our dataset, then the number of slices with size $k$ we can obtain applying the sliding window method is:
+
+\begin{equation}
+    N^{sw}_{k} = \sum_{n=k}^{n_{\max}} (n-k+1)N_n \; , \; \; 1 \leq k \leq n_{\max}
+\end{equation}
+
+
+For example, if we focus on line 1 in the working days, we have the following samples sizes for each vector size $N_{n}$:
+
+
+\begin{table}[H]
+\centering
+\caption{Sample sizes for each vector size ($N_n$).}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+{\color[HTML]{000000} Interval} & {\color[HTML]{000000} $N_1$} & {\color[HTML]{000000} $N_2$} & {\color[HTML]{000000} $N_3$} & \multicolumn{1}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} $N_4$}} & {\color[HTML]{000000} $N_5$} & {\color[HTML]{000000} $N_6$} \\ \hline
+7:00-11:00                      & 649                       & 1340                      & 2028                      & 1178                                                                   & 137                       & 3                         \\ \hline
+10:00-11:00                     & 1                         & 69                        & 581                       & 620                                                                    & 70                        & 1                         \\ \hline
+\end{tabular}
+\end{table}
+
+
+And, after applying the sliding windows of size $k$ over all the headways vectors, we obtain the following sample sizes (or number of slices) $N^{sw}_{k}$ :
+
+
+\begin{table}[H]
+\centering
+\caption{Sample sizes for each sliding window size ($N^{sw}_{k}$).}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+{\color[HTML]{000000} Interval} & {\color[HTML]{000000} $N^{sw}_1$} & {\color[HTML]{000000} $N^{sw}_2$} & {\color[HTML]{000000} $N^{sw}_3$} & \multicolumn{1}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} $N^{sw}_4$}} & {\color[HTML]{000000} $N^{sw}_5$} & {\color[HTML]{000000} $N^{sw}_6$} \\ \hline
+7:00-11:00                      & 14828                     & 9493                      & 4807                      & 1461                                                                   & 143                       & 3                         \\ \hline
+10:00-11:00                     & 4718                      & 3376                      & 2035                      & 763                                                                    & 72                        & 1                         \\ \hline
+\end{tabular}
+\end{table}
+
+
+Where we can observe that the number of samples decreases the higher the sliding window size $k$ is. 
+This is not a problem because, as we said before, we can use all of these sliding windows to detect anomalies in real time when there are more than k buses inside the line ($m \geq k+1$), so, if we considered that the sliding windows of size $5$ and $6$ do not have enough instances to train its anomaly detection model, we can use the sliding windows of size $1$, $2$, $3$, $4$ to compute the corresponding vector slices for detecting the anomalies in real time when there are $6$ or more buses inside the line.
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{../images/swslices1.png}
+  \caption{From 7:00 to 11:00.}
+  \label{fig:swslices1}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=0.99\linewidth]{../images/swslices2.png}
+  \caption{From 10:00 to 11:00.}
+  \label{fig:swslices2}
+\end{subfigure}
+\caption{Slices obtained for each k for line 1 in LA days.}
+\label{fig:swslices}
+\end{figure}
+
+
+\subsection{Headways as time series}
+
+Note that the headways are computed for each selected instant of time; hence the corresponding vector slices define a series of values along time, where each of the different vector time series is identified by the group of buses $b$ that conform it in order. 
+Let $g_{k}$ be 
+
+\def\busgroup{
+    \begin{bmatrix}
+       b_1 & b_2 & \cdots & b_k & b_{(k+1)}
+    \end{bmatrix}
+}
+
+\begin{gather}
+    g_k = \busgroup
+\end{gather}
+
+a bus group defining slice vectors of size $k$; hence, the time series corresponding to $g_k$ can be defined as follows:
+
+\def\hwgroup{
+    \begin{bmatrix}
+       \hw{1}{2}(t_i) & \hw{2}{3}(t_i) & \cdots & \hw{k}{(k+1)}(t_i)
+    \end{bmatrix}
+}
+
+\begin{gather}
+    H_{g_k}(t_i) = \hwgroup
+\end{gather}
+
+These temporal series are formed by all the slices of size $k$ that are constituted by the group of buses $g_k$ in the same order. For instance, the temporal series for a group of size $k = 1$ is $\hw{1}{2}(t_i)$. If we represent the temporal series for all the groups of size 1 that appear inside a line direction for an interval of 90 minutes, we obtain the following:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.275]{../images/hwovertime.png}
+    \caption{Headways in line 1 over time for each group of two buses.}
+    \label{fig:hwovertime}
+\end{figure}
+
+
+From Figure \ref{fig:hwovertime} we can extract some interesting conclusions:
+
+\begin{itemize}
+    \item \textbf{The duration of the series with same dimension is very similar and lower than the complete trip duration:} a series of headways starts when the second bus enters the line direction and ends when the first bus reaches the last stop of the journey. Because of that, the duration of a bus ($b_2$) trip through the whole line direction can be obtained as the duration of the union of the two series of buses that involve that bus ($\hw{1}{2}(t_i)$ and $\hw{2}{3}(t_i)$). 
+    
+    As the time it takes to go from the first to the last stop for a given moment of the day is around a fixed value, the time series durations are also around a fixed value, being longer if the second bus enters the line before it should or the first bus reaches the last stop later than it should, and vice versa.
+    
+    In Figure \ref{fig:hwovertime}, $\hway{119}{118}(t_i)$ is active from 10:18 to 11:15, while $\hway{118}{8238}(t_i)$ lasts from 10:31 to 11:26, so bus 118 took around 1 hour and 8 minutes to complete the trip, while both headways lasted for around 57 minutes.
+    
+    \item \textbf{Consecutive series are negatively correlated:} consecutive headways series ($\hw{1}{2}(t_i)$ and $\hw{2}{3}(t_i)$) have a bus in common ($b_2$). Because of that, the behaviour of that bus affects the values of both series. If this bus goes slower than expected, the value of $\hw{1}{2}(t_i)$ will increase and the value of $\hw{2}{3}(t_i)$ will decrease, and vice versa. 
+    
+    So, paying attention to the relationship between values of consecutive series allows us to visually determine which bus has caused the variation of the value of both headways and why. 
+    
+    For example, from 10:48 to 10:52, $\hway{118}{8238}(t_i)$ decreases around 170 seconds, while $\hway{8238}{116}(t_i)$ increases also around 170 seconds, so we can conclude that bus 8238 was travelling faster than expected.
+    
+    \item \textbf{The duration of the series is inversely proportional to its dimension:} the temporal series of a group of size k+1, is formed by the temporal intersection of the series of lower size that conform it, which causes the duration of the temporal series to be lower the higher their size is.
+    
+    For example, the temporal series of size 2 $H_{119,118,8238}(t_i)$ is conformed by the temporal intersection of the series of size 1 $\hway{119}{118}(t_i)$ and $\hway{118}{8238}(t_i)$, so it starts at 10:31 and ends at 11:15, having a duration of 44 minutes.
+    
+    \item \textbf{Overtaking between buses implies the appearance of new headways series:} 
+    as we have defined the headways as the time intervals between consecutive buses inside a line direction, overtaking between buses causes the order of the buses inside the line to change, so if bus $b_3$ overtakes bus $b_2$ then $\hw{1}{2}(t_i)$ and $\hw{2}{3}(t_i)$ disappear and are substituted by $\hw{1}{3}(t_i)$ and $\hw{3}{2}(t_i)$ as long as the overtaking lasts.
+     
+    In Figure \ref{fig:hwovertime}, we can see that from 10:36 to 10:39,  $\hway{119}{118}(t_i)$ and $\hway{118}{8238}(t_i)$ disappear and are substituted by $\hway{119}{8238}(t_i)$ and $\hway{8238}{118}(t_i)$, which means that during these 3 minutes bus 8238 was ahead of bus 118. We can also observe that from 10:33 to 10:35 $\hway{119}{118}(t_i)$ was increasing while $\hway{118}{8238}(t_i)$ was decreasing. So this overtaking took place because bus 118 was going slower than it should for some reason.
+\end{itemize}
+
+
+As we can see, the analysis of the headways as temporal series gives us a lot of important information that we can not obtain from the analysis of their instantaneous values. But there is a problem in the initial definition of the headways, as overtakings imply the substitution of time series for new series (because the order of the buses inside the line changes), we lose track of the series that disappear, so we need to find the connection with the new series that appear to determine what happened.
+
+The phenomenon of series appearing and disappearing does not allow a simple systematic analysis of the overtakings; hence, it would be easier for the model to handle overtakings if they implied the series to get negative values, instead of making them disappear, so we do not lose track of them and we can determine easily what happened.
+
+
+\section{Second approach to the problem}
+
+In this second approach to the problem, we are going to make use of the headways analysis scheme described in the first approach, adding now the possibility of the headways to take negative values, which represent overtakings between buses.
+
+This second approach is the one we are going to use for developing the real-time anomaly detection model, but both of the approaches could be used for this purpose, depending on the user needs, considerations and purposes (e.g., the relevance of detecting overtakings as a type of anomaly).
+
+\subsection{Headways with negative values}
+
+Depending on the line, type of day and hours range, we might find that eventually some buses overtake another ones that are going too slow. A situation like this usually happens when a bus arrives to a stop where the bus in front (which was going slower than it should) is picking up passengers, and, instead of waiting behind it, overtakes it in order to arrive sooner to the next stop, so the headways (from the point of view of the passengers) are maintained as regular as possible.
+
+With the model defined so far, the fact that a bus overtakes another one is reflected by a time headways series disappearing and a new one showing up. This characterization may not help to analyze the overtaking events with detail. Hence, we developed and alternative modelling procedure which allows the headways to get negative values; this becomes interesting, because depending of the quantity of negative values that we get for a line, day type and hours range, we can determine whether it is anomalous or not for a bus to overtake another one.
+
+
+\subsubsection{Order of buses entrance to each line direction}
+
+In order to allow negative values in the headways, we need to make a change in the algorithm used to obtain them. As we only analyze the headways when the buses are inside one of the directions of a line, and not waiting on one of its edges, we can divide the line in two parts instead of interpreting it as a circle. This allows us to define an order of entrance of the buses to each one of the line directions. 
+
+This order of entrance of the buses to the line directions can be understood as a list where each bus id can only appear once. For a bus line $l$, inside the direction $d$ with $m$ buses inside this ordered list ($OL$) can be defined as: 
+
+\def\ol{
+    \begin{bmatrix}
+       b_1 & b_2 & \cdots & b_{m-1} & b_m
+    \end{bmatrix}
+}
+
+\begin{gather}
+    OL_{l,d,m}(t_i) = \ol
+\end{gather}
+
+So $b_1$ was the first bus joining the line direction, no matter if it is really the one closer to the end of the journey, 
+and $b_m$ is the last bus that joined the line direction. To manage this list, we have built a dictionary that contains two values for each bus id:
+
+\begin{itemize}
+    \item \textbf{Number of consecutive times that we have received information about that bus:} it stores the number of consecutive times that we have received data of the bus being inside that line direction. If the bus does not appear it is set to 0, and if the bus appears it is increased by one.
+    
+    \item \textbf{Number of consecutive times that we have not received information about that bus:} it indicates the number of consecutive times that we have not received data of the bus being inside that line direction. If the bus appears it is set to 0, and if the bus is not inside the line direction it is increased by one.
+\end{itemize}
+
+Once we have defined these values, we define a threshold, which in our case has been arbitrarily set to 3. The rules for adding or removing the buses from the list are simple. If a bus appears for more than 3 consecutive times inside a line direction we append it to the end of the list. On the other hand, if a bus disappears for more than 3 consecutive times, we delete it from the list. 
+
+The higher this threshold is, the more we ensure of not deleting buses that have not ended their line direction journey yet just because for some error in the API we did not receive a value for them, also avoiding adding buses to the line direction as soon as we receive a single instance for them, which might be also an error in the API, that is telling us that the bus has already started to travel along the line direction when it has not. We need three consecutive appearances of a bus inside the line direction to consider it, losing three instances of data for each headway.
+
+
+\subsubsection{Headways vector and ordered list of buses entrance to the line}
+
+Once we have introduced the ordered list of buses, we have to slightly redefine the headways vector. Formally, the definition of the vector of headways remains the same: 
+
+\begin{equation}
+    H_{l,d,m}(t_i) = \hwvector \; \; \forall m \in \mathbb{N} , m>1 \nonumber
+\end{equation}
+
+but now $b_1$ is the first bus inside $OL$, instead of the bus closer to the last stop, and $b_m$ is the last bus inside $OL$, instead of the one more separated from the last stop. Thus, now the elements inside the vector can get negative values, which indicate overtakings.
+
+
+\section{Final approach to the problem: N-Dimensional Series of Headways}
+
+Finally, putting some of the concepts explained in the subsections above together, we are going to define our final interpretation of the headways along time, for which we are going to build the anomalies detection model. From now on, we are going to refer to this concept as \textbf{N-Dimensional Series of Headways}. 
+
+A N-Dimensional Series of headways is formed by all the slices of size $N$ that we can obtain from the headways vectors, in chronological order, and whose buses identifiers are equal in order to $g_N$. Where $g_N$ should be an slice of $OL$.
+
+\subsection{Example for a given line, type of day and hour range}
+\label{series-example}
+
+In order to get familiar with the concept, we are going to give an example of how these series are built, focusing on the headways data obtained for line 132 in working days from 10:00 to 11:00.
+
+First we compute the number of vectors we have of each size inside each line direction for each moment, so we know until what size we can obtain the sliding window slices, and how many slices we have for each of these sliding window sizes. 
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=0.95\linewidth]{../images/buses132-1011.png}
+  \caption{Headways vectors sizes.}
+  \label{fig:buses132-1011}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{../images/slices132-1011.png}
+  \caption{Number of instances obtained for each sliding window size.}
+  \label{fig:slices132-1011}
+\end{subfigure}
+\caption{Headways vectors and slices number of instances for line 132 in LA days from 10:00 to 11:00.}
+\label{fig:132-1011}
+\end{figure}
+
+As the headways vector sizes that appear the most are 4 and 5, we can conclude that in this time interval there are usually between 5 and 6 buses inside each line direction. Much less frequently we find vectors of size 1, 2, 3, 6 and 7. Because of that, we are able to apply the sliding windows on the vector until size 7, obtaining $N^{sw}_{1} = 6138$ and $N^{sw}_{2} = 4797$ for the lower size sliding windows and  $N^{sw}_{6} = 147$ and  $N^{sw}_{7} = 6$ for the higher size sliding windows.
+
+
+\subsubsection{1-Dimensional Series of Headways}
+
+These series are built from the data of all the slices obtained of size 1. This data has the following format:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.45]{../images/slices-1.png}
+    \caption{Data corresponding to the first five slices of size 1.}
+    \label{fig:slicessize1}
+\end{figure}
+
+Where ``bus1'' holds the identifier of the first bus of the slice, ``bus2'' is the identifier of the second (and last) bus of the slice and ``hw12'' is the headway in seconds between ``bus1'' and ``bus2''. All of the slices shown here have been obtained from the same burst of data, meaning that the ``datetime'' attribute is the same.
+
+If we represent the distribution of the values obtained for ``hw12'', we get the following:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/slices-1-density.png}
+    \caption{Distribution of the slices of size 1.}
+    \label{fig:slicessize1density}
+\end{figure}
+
+Where we can see that most of them are near 420 seconds, so the frequency of passing buses for this line, type of day and line interval must be set approximately to one bus every 7 minutes. In addition, we can observe that less frequently we get negative values, meaning that overtakings may eventually take place in this line. There is also a little peak near to 0, which might be due to the fact that if a bus gets very close to the one in front, it does not surpass it until the front but reaches a new stop and stops to pick up its passengers, so until that happens, we get a lot of values for the headway close to 0. \\
+
+Now, we proceed to turn these slices into time series of size 1. To do this, we divide the slices into subsets with the same values for ``bus1'' and ``bus2'', and we sort these subsets in chronological order. Finally obtaining the 1-Dimensional series of headways, which now can get negative values, and look like the following: 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/slices-1-series.png}
+    \caption{Example of the 1-Dimensional Series obtained.}
+    \label{fig:slicessize1series}
+\end{figure}
+
+
+\subsubsection{2-Dimensional Series of Headways}
+\label{2dseries}
+
+By the same token, 2-D series can be constructed from the data of all the slices obtained of size 2, which have the following format:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.45]{../images/slices-2.png}
+    \caption{Data corresponding to the first five slices of size 2.}
+    \label{fig:slicessize2}
+\end{figure}
+
+But now ``bus2'' represents the bus in the middle, ``bus3'' represents the last bus of the slice and their headway is represented by ``hw23''. 
+
+If we represent the bi-dimensional distribution of the pair of values ``hw12'' and ``hw23'', we obtain the representation of Figure \ref{fig:slicessize2dens}, where the highest density of points is near the pair (400, 400), as expected from the results obtained for the 1-Dimensional series, and we can clearly see that they are negatively correlated. The values situated in the upper left side of the distributions represent the situations where the second bus was closer to the first bus than to the third bus, as well as the values situated at the lower right side of the distribution represent that the second bus was closer to the third bus than to the first bus of the slice.
+
+Finally, we build the 2-Dimensional series from the data of the slices as we did with the 1-Dimensional one, but now instead of looking for unique groups of two buses, we look for unique groups of three buses. A sample of the resulting 2-Dimensional series is shown in Figure \ref{fig:slicessize2series} (time variable has been projected onto the 2-D space of headways variables).
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=0.99\linewidth]{../images/slices-2-density.png}
+  \caption{Distribution of the slices of size 2.}
+  \label{fig:slicessize2dens}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=0.97\linewidth]{../images/slices-2-series.png}
+  \caption{Example of the 2-Dimensional Series obtained.}
+  \label{fig:slicessize2series}
+\end{subfigure}
+\caption{Distribution and time series for the 2-Dimensional Series.}
+\label{fig:slicessize2graphs}
+\end{figure}
+
+\subsubsection{($N>2$)-Dimensional Series of Headways}
+
+For the rest of the sliding windows sizes, the process is analogous, increasing the number of dimensions of the data, as well as the duration of the series, whereas the quantity of available slices decreases. 
+
+
+\section{Design of the anomalies detection model}
+
+
+Our model of anomaly detection must be applicable to any of the possible dimensions of the headway series, as well as being as robust and reliable as possible.
+
+If we pay attention to the distributions obtained in the previous section, we can appreciate that the distribution of the one-dimensional headways is slightly similar to a normal distribution. Furthermore, if we look at the distribution of the two-dimensional headways, we can see that it resembles a normal two-dimensional distribution whose variables are negatively correlated, as they conform an ellipse that has more density in the center than in the borders.
+
+Thus, if we assume that the values of the N-Dimensional Series of headways follow approximately a normal N-dimensional distribution, we can estimate their mean vector and covariance matrix, and use them to determine whether a new value is anomalous or not, which can be done using the distance of Mahalanobis.
+
+\subsection{Mahalanobis distance}
+
+A well known method to determine how unusual is to get a value from a known multivariate normal distribution is the distance of Mahalanobis, which can be interpreted as a statistically normalized distance from a point P to the mean value (seen as another point) of a given distribution D. It consists of a multi-dimensional generalization of the idea of measuring how many standard deviations this point P is away from the mean of the distribution D.
+
+Thus, if the point P is located at the mean of the distribution B, the Malahanobis distance is zero, and grows as P moves away from the mean along each principal component axis \cite{mahalanobis}.
+
+The Mahalanobis distance of an observation $\vec{x}$ from a set of observations with mean $\vec{\mu}$ and covariance matrix $S$ is:
+
+\begin{equation}
+    D_M(\vec{x}) = \sqrt{(\vec{x}-\vec{\mu})^T S^{-1} (\vec{x}-\vec{\mu})}
+\end{equation}
+
+If we get all the points that are at the same distance of Mahalanabis from the mean, we obtain an ellipse, whose inclination depends on the correlation that exists between the variables and whose axes size (reflecting the variability of the principal components) depends on the variability of the data in each of the variables that we take into account.
+
+Assuming the distribution is normal, we can set the size of the ellipse drawn to contain an arbitrary percentage of the points. As the distance of Mahalanobis squared has chi-squared distribution with $N$ degrees of freedom, where $N$ represents the dimensions of the distribution, we can obtain the threshold value for the Mahalanobis distance for which there is a percentage $(1-\alpha)\cdot 100\%$ of the points to fall inside the ellipse as: 
+
+\begin{equation}
+    D^2_{M,th} =\chi^2_{N,\alpha}
+\end{equation}
+
+The value $(1-\alpha)$ is called the confidence level. If we draw these confidence ellipses, so that they contain a given percentage of the slices obtained in the distribution of Figure \ref{fig:slicessize2dens}, we get the following:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/conf-ellipses.png}
+    \caption{Confidence ellipses for the distribution of Figure \ref{fig:slicessize2dens}.}
+    \label{fig:confellipses}
+\end{figure}
+
+
+So the higher the confidence (or percentage of points that fall inside) is, the bigger the ellipse is.  
+
+
+\subsection{Time series of Mahalanobis distances from the N-Dimensional Series of Headways}
+
+The anomalies detection model we have constructed consists of complementing the distance of Mahalanobis with a temporal analysis to characterize temporal series, and it is defined by two hyperparameters:
+
+\begin{itemize}
+    \item \textbf{Confidence (conf):} the probability of a point P from the  distribution B of falling inside the ellipse. It determines the threshold for the distance of Mahalanobis ($D_{M,th}$) that we are going to use to conclude if the values of the series are anomalous or not. Higher values for the confidence imply that we will detect values as anomalous less often.
+    \item \textbf{Size threshold (size\textunderscore th):} the minimum number of consecutive values along time of an N-Dimensional series of headways that we need to detect an anomaly. So when we get a value of the series whose distance of Mahalanobis is bigger than the threshold defined by the confidence hyperparameter, we start counting until the series ends or the values fall again inside the ellipse. This number of consecutive values outside the confidence interval determines the size of the potential anomaly, if the size is above the threshold it is classified as an anomaly. On the other hand, if the size is lower than the threshold, it is ignored.
+\end{itemize}
+
+So, assuming the headways follow the same distribution in a selected time range, which in our case has been arbitrarily set to 1 hour, we can construct a model by estimating the mean vector and covariance matrix for each N-Dimensional series of headways that we get for each hour of the day, type of day and line. Then, this model can be used to detect anomalies in real time. 
+
+If we apply the model with $conf = 0.95$ and $size\textunderscore th =1$ to the 2-Dimensional series of headways obtained in \ref{2dseries}, and we represent the detected anomalies, we obtain Figure \ref{fig:detected2danoms}: 
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/detected-2d-anoms.png}
+    \caption{Example of the anomalies detected for the 2-Dimensional Series.}
+    \label{fig:detected2danoms}
+\end{figure}
+
+
+\subsection{Performance of the anomaly detection model depending on the hyperparameters and number of dimensions}
+
+To evaluate the performance of our anomalies detection model depending on the hyperparameters, we have defined three parameters:
+
+\begin{itemize}
+    \item $N_{anom}$: number of anomalous subseries detected from the series of headways.
+    \item $\overline{size}$: mean size (or consecutive values along time outside confidence interval) of the anomalous subseries detected.
+    \item $p_{anom}$: percentage of the total (time) slices that conform the subseries of headways that have been detected as anomalies. It can be calculated as: 
+    
+    \begin{equation}
+        p_{anom} = \frac{N_{anom}\overline{size}}{N^{sw}_k}\times100
+    \end{equation}
+\end{itemize}
+
+So we compute these parameters for the same data that we used for the example in \ref{series-example}, obtaining the results below:
+
+\begin{table}[H]
+\centering\small
+\caption{Anomalies detection results for 1-D Series of Headways ($N^{sw}_1 = 6138$).}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+\cellcolor[HTML]{C0C0C0}                                                              & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} \textbf{0.9}}}                                                                                                   & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.95}}                                                                                                                         & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.99}}                                                                                                                         \\ \cline{2-10} 
+\rowcolor[HTML]{C0C0C0} 
+\multirow{-2}{*}{\cellcolor[HTML]{C0C0C0}\backslashbox{size\textunderscore th}{conf}} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{1}                                                    & 95                                                      & 6.095                                                          & 9.433                                                   & 52                                                      & 5.577                                                          & 4.725                                                   & 22                                                      & 3.136                                                          & 1.124                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{2}                                                    & 66                                                      & 8.333                                                          & 8.960                                                   & 34                                                      & 8.000                                                              & 4.431                                                   & 13                                                      & 4.615                                                          & 0.977                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{3}                                                    & 49                                                      & 10.531                                                         & 8.407                                                   & 27                                                      & 9.556                                                          & 4.204                                                   & 7                                                       & 6.857                                                          & 0.782                                                   \\ \hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering\small
+\caption{Anomalies detection results for 2-D Series of Headways ($N^{sw}_2 = 4797$).}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+\cellcolor[HTML]{C0C0C0}                                                              & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} \textbf{0.9}}}                                                                                                   & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.95}}                                                                                                                         & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.99}}                                                                                                                         \\ \cline{2-10} 
+\rowcolor[HTML]{C0C0C0} 
+\multirow{-2}{*}{\cellcolor[HTML]{C0C0C0}\backslashbox{size\textunderscore th}{conf}} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{1}                                                    & 79                                                      & 5.962                                                          & 9.819                                                   & 56                                                      & 4.768                                                          & 5.566                                                   & 13                                                      & 3.462                                                          & 0.938                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{2}                                                    & 54                                                      & 8.259                                                          & 9.297                                                   & 40                                                      & 6.275                                                          & 5.232                                                   & 7                                                       & 5.571                                                          & 0.813                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{3}                                                    & 39                                                      & 10.667                                                         & 8.672                                                   & 28                                                      & 8.107                                                          & 4.732                                                   & 5                                                       & 7.000                                                          & 0.730                                                   \\ \hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering\small
+\caption{Anomalies detection results for 3-D Series of Headways  ($N^{sw}_3 = 3457$).}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+\cellcolor[HTML]{C0C0C0}                                                              & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} \textbf{0.9}}}                                                                                                   & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.95}}                                                                                                                         & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.99}}                                                                                                                         \\ \cline{2-10} 
+\rowcolor[HTML]{C0C0C0} 
+\multirow{-2}{*}{\cellcolor[HTML]{C0C0C0}\backslashbox{size\textunderscore th}{conf}} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{1}                                                    & 64                                                      & 5.516                                                          & 10.212                                                  & 46                                                      & 3.630                                                          & 4.830                                                   & 11                                                      & 2.727                                                          & 0.868                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{2}                                                    & 50                                                      & 6.780                                                          & 9.806                                                   & 32                                                      & 4.781                                                          & 4.426                                                   & 6                                                       & 4.167                                                          & 0.723                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{3}                                                    & 35                                                      & 8.829                                                          & 8.939                                                   & 24                                                      & 5.708                                                          & 3.963                                                   & 4                                                       & 5.250                                                          & 0.607                                                   \\ \hline
+\end{tabular}
+\end{table}
+
+As the confidence increases, the number, mean size and percentage of anomalies detected decreases. On the other hand, when the size threshold increases, the mean size of the anomalies increases, and the number and percentage of the anomalies detected decreases.
+
+Note that $p_{anom}$ decreases very slowly as a function of the size threshold; this fact agrees with the high correlation between time consecutive values in the series. 
+
+Higher window sizes imply lower quantities of data to estimate the mean vector and covariance matrices of the distributions, and tend to decrease the variance of the data (as they are applied when there are more buses inside the line direction, restricting the evolution of the headways within a range of lower values).
+
+A further analysis of  the  characteristics  of  using  each  of  the  available  N-Dimesional series to detect anomalies has been left as a future line of research.
+
+\section{Real-time anomaly detection on the headways}
+
+To apply the models to the real-time detection of anomalies, we obtain the headways data for all the different lines, types of day and hour ranges, and for each one of them we estimate the mean vector and covariance matrix of all the sliding window sizes for which we can obtain more than 100 slices, which determines the maximum dimension of the headways series that we can analyze. This is done with the script ``models\textunderscore params.py''. 
+
+Once we have estimated the models parameters, we run the script ``detect\textunderscore anoms\textunderscore hws.py''. This script reads the last burst of data, processes the N-Dimensional series of headways and calculates the Mahalanobis distance. If any of the series exceeds the distance threshold for more than ``size\textunderscore th'' consecutive times, it detects the anomaly and waits till it ends, storing it in the file ``anomalies.csv''.
+

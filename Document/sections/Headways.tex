@@ -1,0 +1,101 @@
+
+
+Another essential factor in a public transport network is the time interval between consecutive vehicles, better known by the term ``headway''. 
+
+As defined in \cite{headway}, headways are a key input in calculating the overall route capacity (maximum number of passengers than can travel a given route in a given amount of time) of any transit system. A system with large headways has more empty space than passenger capacity, which lowers the total number of passengers or cargo quantity being transported for a given length of line. In this case, the capacity has to be improved through the use of larger vehicles. On the other end of the scale, a system with short headways, like cars on a freeway, can offer relatively large capacities even though the vehicles carry few passengers, as they require more infrastructure, they are more expensive to achieve. 
+
+
+Also, as illustrated in \cite{gershenson2009}, maintaining regular headways is crucial as it minimizes the waiting time for passengers at the stops. However, the configuration where the headways are equal is unstable. This is because of the following: if one vehicle is delayed, then there will be a shorter headway with the vehicle behind and a longer headway with the vehicle in front. Longer headways lead to more passengers waiting at the stops, which lead to more delays. Also, shorter headways lead to less passengers waiting. Thus, vehicles moving behind a delayed vehicle will go faster than average. This reasoning is represented in Figure \ref{fig:headwaysequality}, that shows the evolution of the headways between buses for three consecutive instants of time a, b and c:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/headwaysequality.png}
+    \caption{Example of the headways equality instability due to the varying number of waiting passengers at each stop.}
+    \label{fig:headwaysequality}
+\end{figure}
+
+As the importance of the headways is so high in public transport, in this chapter we will explain first the process followed to obtain the values of the headways for the collected clean data, and then, we will illustrate a slight analysis we have performed on them.
+
+
+\section{Development of the estimator}
+
+As it has been observed in the data, the urban buses of the EMT try to correct the irregularities in the headways by adding waiting time before leaving the first stop when they switch between directions of the line they belong to. In addition, the new buses that join the line always appear at the first stop of one of the line directions, as well as the buses that leave the line disappear after reaching the last stop of a line direction. For such reason, we are going to restrict our analysis to the range between the second and the penultimate stops, which will be denoted as the first and last one in the remainder of the document.
+
+\medskip
+
+In order to explain the algorithm, we have defined the values below: 
+
+\begin{itemize}
+    \item \textbf{Mean running time($MRT^{A,B}$): }Mean time between stop A and stop B, the mean is calculated from the time between stops data built in \ref{sub:timebtstopsestim} for a range of 1 hour (7:00 to 8:00, 8:00 to 9:00, etc) inside each type of day. So the mean time between non-consecutive stops is:
+    
+    \begin{equation}
+        MRT^{B,E} = MRT^{B,C} + MRT^{C,D} + MRT^{D,E}
+    \end{equation}
+    
+    \item \textbf{Time to stop($TTS^C_A$): }Time remaining for bus A to reach stop C, this value is obtained from the ``estimateArrive'' attribute. If the stop C is the next stop that the bus is going to arrive, this value is equivalent to $TTNS$. There might be more than one stop giving estimations about the same bus.
+
+    
+    \item \textbf{Time to next stop($TTNS_A$): }Time remaining for bus A to reach the next stop.
+    
+    \item \textbf{Time to last stop($TTLS_A$): }Time remaining for bus A to reach the last stop. If the last stop is stop E, and we know the time remaining for bus A to reach the stop C. Then:
+    
+    \begin{equation}
+        TTLS_A = TTS^C_A + MRT^{C,E}
+    \end{equation}
+    
+    When we have more than one stop giving estimations about a bus, the time to the last stop is the mean of all the available times to the last stop for that bus.
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.75]{../images/headways.png}
+        \caption{Example of the headways in a bus line for directions 1 (blue) and 2 (red).}
+        \label{fig:headways}
+    \end{figure}
+
+    \item \textbf{Headway($\hway{A}{B}$): }Time interval between buses A and B. Calculated as the diference between the mean times remaining to reach the last stops of both of them: 
+    
+    \begin{equation}
+        \hway{A}{B} = \overline{TTLS_B} - \overline{TTLS_A}
+    \end{equation}
+    
+\end{itemize}
+    
+
+So, for each line and direction, the algorithm computes all the values described above for each burst of requests (considering that all the request inside a burst occur at the same time). Finally obtaining a list of the headways ordered by proximity to the end of the route, which if we had 4 buses inside the direction 1 of the line would be like this: $HW_1 = [\hway{A}{B},\hway{B}{C},\hway{C}{D}]$.
+
+\medskip
+
+To calculate them, we run the script ``headways.py'', which stores the results in the file ``headways.csv'' with the following attributes for each row:
+
+\begin{itemize}
+    \item \textbf{line: } Id of the line the bus belongs to
+    \item \textbf{direction: } Direction of the line
+    \item \textbf{datetime: } Time when the headway was calculated, it can be used as an unique identifier of the headways list for each line and direction.
+    \item \textbf{hw\textunderscore pos: } Position of the headway in the list. As defined, $hw\textunderscore pos = 0$ corresponds to the first bus of the line, and as it has no bus in front its headway is set to 0. This is useful to difference between when there is only one bus inside the route compared to when there are no buses in the route. 
+    \item \textbf{busA: } Identifier of the bus in front.
+    \item \textbf{busB: } Identifier of the bus behind bus A.
+    \item \textbf{headway: } Time in seconds between bus A and bus B.
+    \item \textbf{busB\textunderscore ttls: }Time remaining of the bus B to reach the last stop of the route.
+\end{itemize}
+
+\section{Analysis of the headways}
+
+Now, as we did with the times between stops, we are going to analyse how the headways vary depending on the type of day and the hours range. Focusing in the values obtained for line 1:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/hw-LA.png}
+    \caption{Headways of line 1 in working days (LA).}
+    \label{fig:hwLA}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/hw-FE.png}
+    \caption{Headways of line 1 in festive days (FE).}
+    \label{fig:hwFE}
+\end{figure}
+
+The frequencies observed are, as we would expect, higher in the working days than in the festive days. If we focus in the working days, the headways seem to be lower for the early morning and late night intervals, and higher with almost a constant mean for the hours between 9:00 and 21:00. 
+
+On the other hand, in the festive days the headways seem to have a higher dependency on the hours range, decreasing their value the later it is in the day.

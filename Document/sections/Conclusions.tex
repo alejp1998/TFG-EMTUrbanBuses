@@ -1,0 +1,35 @@
+
+
+\section{Conclusions}
+
+In the present Final Degree Project we have first performed a statistical analysis of the arrival times of the buses of the EMT to the stops, and then we have developed a real-time anomalies detection model for the headways between the buses. \\
+
+Initially, we gathered the data provided by the EMT API about the estimations of the arrival times of the buses to the stops, combining it with the static data in ``GTFS'' format that contains information on the route layout of each of the lines and their corresponding stops, among other data such as fares or bus schedules. As the number of hits per day of the API was limited, we were forced to focus on a subset of all the lines available (lines 1, 44, 82, 91, 92, 99, 132 and 133), performing a request to all their stops every 50 seconds.\\
+
+Subsequently, we have characterized the behavior of the data collected through descriptive statistical tools, discovering, among other things, that the geographical location of the buses indicated by the API is of quite poor quality, so we avoided to consider it in the developed tools. \\
+
+The initial data characterization showed the appearance of contaminated values in the dataset, such as remaining times to the stops excessively high (a remaining time of 999999 seconds was found to appear frequently among the anomalous values) and too large or even negative distances remaining to the stops. This leaded us to perform data cleansing techniques on the data, establishing a set of criteria based on a-priori knowledge, which left us with around 95\% of the data, as the other 5\% of the data was considered to be outliers or defective values. \\
+
+Then, from the cleaned data, we have designed a set of algorithms to process derived information, such as the estimations of the geographical position of the buses, arrival times of the buses to the stops and the running time between stops, and we have compared them with the estimations and information given in real time by the API. The data cleaning and processing of the derived data is done with the scripts ``preprocess\textunderscore clean\textunderscore data.py'' and ``times\textunderscore bt \textunderscore stops.py'', which have a high computational cost, so, in order to reduce the processing time we were forced to apply multiprocessing techniques, splitting the tasks to compute as equally as possible between all the cores of the processor of the available server in the organization.\\
+
+Using the clean and derived data, we developed an algorithm to process the headways between the buses. This algorithm is applied with the script ``headways.py'', which is the one with the higher computational cost and complexity of all the algorithms developed, taking around 7 hours to process the headways using all of the 8 cores available in our machine. We performed an exhaustive analysis on the characteristics and behaviour of the headways, which lead us to the concept of the N-Dimensional series of headways, that combines the relationships between groups of two or more buses with their temporal series condition, and can take negative values which represent overtaking between buses events.\\
+
+Finally, based on statistical modelling, we developed a non-supervised model to perform the detection of anomalies in real time on the N-Dimensional series of headways. This model estimates the mean vectors and the covariance matrices of the headways data gathered, and uses them to establish a threshold for the Mahalanobis distance (whose value depends on the confidence hyperparameter). If the N-Dimensional series exceed this threshold for more consecutive times than the value established for the size threshold, they are classified as anomalies. In conjunction with the real-time anomaly detection, we developed an interactive dashboard with the aim of having a visual interpretation of how the model works, as well as monitoring the buses and headways behaviour in each of the lines of analysis. \\
+
+It it also important to mention the effects that the COVID-19 crisis produced in the development of the project, reducing the value of the collected data and making it impossible to, among other things, collect more ground truth data and carry on personal interactions with the research colleagues. On the other hand, it allowed to check the performance of both hypothesis testing tools and our anomaly detection model against unprecedented scenarios.\\
+
+On a personal level, the project has allowed the acquisition of valuable knowledge, such as the handling of the Python language and its main libraries destined to data analysis (such as ``pandas'' \cite{pandas} or ``scipy'' \cite{scipy}), the use of data visualization tools to construct meaningfull representations (such as ``Plotly'' \cite{plotly}), and the functioning of public transport, as well as knowledge about the bast fields of statistics and non-supervised machine learning. Throughout the development of the project, there have been interactions with the author of the other final degree project developed at the \textsl{Cátedra Cabify}, Carlos García-Mauriño Dueñas, and the tutor, Pedro José Zufiria Zatarain, with whom a constant horizontal flow of the progress has been maintained. In summary, this final degree project has constituted a very rewarding experience, which has allowed the author to grow both academically and personally.
+
+\section{Future lines of research}
+
+In order to continue the work made in this Final Degree Project, we have set some possible future lines of research:
+
+\begin{itemize}
+    \item To collect a higher amount of ground truth data, in order to improve the analysis of the quality of the estimators built, and the quality of the estimations provided by the API.
+    \item To perform a detailed analysis of the characteristics of using each of the available N-Dimesional series to detect anomalies.
+    \item To develop new improved schemes, based on the application of the squared Mahalanobis distance, for detecting outliers in multivariate non-Gaussian data. \cite{8336353}.
+    \item To include the analysis of the correlation between series and other characteristics of these series such as its derivative, to increase the parameters our model takes into account to detect the anomalies.
+    \item To perform a classification of the anomalies detected by the model, indicating their cause. 
+    \item To build up a {\em Quickest Detection} scheme for a rapid response to the anomalies.
+    \item To build up a detector of general distribution changes, applicable to other scenarios beyond the anomaly detection one.
+\end{itemize}
