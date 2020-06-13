@@ -1,0 +1,227 @@
+
+
+Coronavirus disease 2019 (COVID-19) is an infectious disease caused by severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2). The disease was first identified in late December 2019 in Wuhan, the capital of China's Hubei province, and has since spread globally, resulting in the ongoing 2019–20 coronavirus pandemic \cite{covid19}.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/world-covid.png}
+    \caption{World COVID-19 total cases evolution until April 10th \cite{covid19-data}.}
+    \label{fig:worldcovid}
+\end{figure}
+
+
+Despite the fact that by mid-February the virus had already infected more than 100,000 people (mostly Chinese), it did not begin to spread significantly through Spain until early March, when we surpassed the 100 infected people. 
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/spain-covid.png}
+    \caption{Spain COVID-19 total cases evolution until April 10th \cite{covid19-data}.}
+    \label{fig:spaincovid}
+\end{figure}
+
+
+Therefore, the Spanish government was forced to apply a series of measures with the aim of slowing down the growth rate of the curve of infected people. 
+
+First, on March 11th, the universities and educational centers of Madrid cancelled all their face-to-face activities, which caused the university bus lines (91(F),92(G) and 99(U)) to cease their activity as well \cite{uni-closed}.
+
+Secondly, on March 15th, after the state of alarm was declared, the national quarantine was established. As a result, the Madrid city bus lines reduced their activity \cite{quarantine-spain}.
+
+In this section we will make a brief analysis of how these measures have affected the data collected, and we will determine if it is appropriate to take into account the data belonging to the quarantine period to build our models. 
+
+\section{Effects on the collected data}
+
+In order to determine whether the COVID-19 has affected the data or not, we have splitted the data in two subgroups:
+
+\begin{itemize}
+    \item \textbf{Data collected before the COVID-19 event: }All the data collected before March 15th, the day when the quarantine officially started. We are going to label this data as the random variable $X_{b}$.
+    \item \textbf{Data collected while the COVID-19 event: }The data collected from March 15th to April 10th; it will be denoted with the random variable $X_{w}$.
+\end{itemize}
+
+So the objective is to check if the statistical distribution of $X_{b}$ is close to the distribution of $X_{w}$; for such purpose, we are going to perform some hypothesis testing for both the data collected of the times between stops and the headways between buses, using the \textbf{Aspin-Welch t-test}. This test assumes that: 
+
+\begin{itemize}
+    \item The two samples are independent from each other, and come from two distinct populations.
+    \item Both populations follow a normal distribution, or the sample sizes are higher than 30, and do not need to have equal variances (which would be needed if we wanted to perform a standard t-test).
+    
+\end{itemize}
+
+In this test, if we are comparing the mean of $X_{b}$ against the mean of $X_{w}$, the test statistic (or $t$-score) is:
+
+\begin{equation}
+    t\text{-score} = \dfrac{(\overline{x_b}-\overline{x_w}) - (\mu_b - \mu_w)}{\sqrt{\dfrac{s_b^2}{n_b} + \dfrac{s_w^2}{n_w}}}
+\end{equation}
+
+Where $\overline{x_b}$ and $\overline{x_w}$ are the sample means, $\mu_b$ and $\mu_w$ are the population means, $s_b$ and $s_w$ are the sample estimates of the population standard deviations ($\sigma_b$ and $\sigma_w$) and $n_b$ and $n_w$ are the sample sizes. The test statistic computed above approximately follows a $t$-statistic distribution with the following degrees of freedom (df):
+
+\begin{equation}
+    df = \dfrac{[\dfrac{s_b^2}{n_b} + \dfrac{s_w^2}{n_w}]^2}{\dfrac{1}{n_b -1}[\dfrac{s_b^2}{n_b}]^2 + \dfrac{1}{n_w -1}[\dfrac{s_w^2}{n_w}]^2}
+\end{equation}
+
+So, if we set the probability of type I error ($\alpha$), which is the probability of rejecting the null hypothesis $H_0$ when it is true, to $\alpha = 0.05$, it is:
+\begin{equation}
+    \alpha = P( (t > t_{\alpha/2,df})\; or\; (t < -t_{\alpha/2,df}) )
+\end{equation}
+where $t_{\alpha/2,df}$ is the upper threshold in the t-student distribution with $df$ degrees of freedom for the values with a probability lower than $\alpha$/2, assuming that we are running a two-tailed test (we test inequality of the sample means).
+
+Then, given the data sample and the corresponding $t$-score value, we can define its 
+$p$-value (probability of obtaining such a deviation from $H_0$ when $H_0$ is true) as:
+\begin{equation}
+    p\text{-value} = P( (t > |t_{score}| )\; or\; (t < -|t_{score}|) )
+\end{equation}
+so that the test will reject $H_0$ if $|t_{score}|>t_{\alpha/2,df}$, or equivalently if  $p\text{-value} < \alpha$.
+
+\subsection{Time between stops}
+
+First, we are going to test the running times recorded between stops 193 and 173 of line 1, for the working days between 11:00 and 15:00. So the random variables to compare are: 
+
+
+\begin{align*}
+    X_{b} \equiv Running\; time\; before\; COVID-19\\
+    X_{w} \equiv Running\; time\; while\; COVID-19
+\end{align*}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/tbs-covid.png}
+    \caption{Running time between stops 193 and 173 of line 1, before (blue) and while (red) COVID-19.}
+    \label{fig:tbscovid}
+\end{figure}
+
+
+Assuming the samples are independent and knowing that both of them have a sample size higher than 30, we state the hypothesis for the test as: 
+
+\begin{align*}
+    H_{0}:\; \mu_b = \mu_w \\
+    H_{1}:\; \mu_b \neq \mu_w
+\end{align*}
+
+The obtained results are the following:
+
+\begin{table}[H]
+\centering
+\caption{Results for the Aspin-Welcht-test of the effects of COVID-19 on the running times between stops.}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+{\color[HTML]{000000} R.V.} & {\color[HTML]{000000} n} & {\color[HTML]{000000} $\overline{x}$ } & {\color[HTML]{000000} s} & {\color[HTML]{000000} t-score} & {\color[HTML]{000000} df}  & {\color[HTML]{000000} P-value} \\ \hline
+$X_b$                         & 189                     & 135.199(s)                 & 69.964(s)                   &                                &                            &                                \\ \cline{1-4}
+$X_w$                         & 228                     & 64.069(s)                  & 34.133(s)                   & \multirow{-2}{*}{12.9273}      & \multirow{-2}{*}{263.1189} & \multirow{-2}{*}{$\scinot{6.299}{-30}$}       \\ \hline
+\end{tabular}
+\end{table}
+
+where, as we can see the mean running time while the COVID-19 event is significantly lower than the one before, which makes sense as the traffic in the streets is very low compared to the usual one. Also, the standard deviation is lower for $X_w$ as the traffic conditions are also more regular. 
+
+Because of that clear difference in the means, the $p$-value is extremely low, meaning that getting such a deviation in the means is almost impossible if $H_0$ is true, so we reject the null hypothesis.
+
+
+\subsection{Headways}
+
+Secondly, we performed a test on the (one dimensional and non-negative) headways recorded for line 1, also for the working days between 11:00 and 15:00. In this case, the compared random variables are: 
+
+\begin{align*}
+    X_{b} \equiv Headways\; before\; COVID-19\\
+    X_{w} \equiv Headways\; while\; COVID-19
+\end{align*}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/hw-covid.png}
+    \caption{Headways in line 1, before (blue) and while (red) COVID-19.}
+    \label{fig:hwcovid}
+\end{figure}
+
+
+And, as the samples are also independent and both of them have sizes higher than 30, we state the hypothesis:
+
+\begin{align*}
+    H_{0}:\; \mu_b = \mu_w \\
+    H_{1}:\; \mu_b \neq \mu_w
+\end{align*}
+
+Computing the corresponding values, we obtained the following outcome:
+
+\begin{table}[H]
+\centering
+\caption{Results for the Aspin-Welcht-test of the effects of COVID-19 on the headways.}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+{\color[HTML]{000000} R.V.} & {\color[HTML]{000000} n} & {\color[HTML]{000000} $\overline{x}$ } & {\color[HTML]{000000} s} & {\color[HTML]{000000} t-score} & {\color[HTML]{000000} df}  & {\color[HTML]{000000} P-value} \\ \hline
+$X_b$                         & 19101                    & 606.439(s)                 & 356.836(s)                   &                                &                            &                                \\ \cline{1-4}
+$X_w$                         & 18680                     & 726.420(s)                  & 329.511(s)                   & \multirow{-2}{*}{-44.4591}      & \multirow{-2}{*}{36748.916} & \multirow{-2}{*}{$\scinot{4.316}{-249}$}       \\ \hline
+\end{tabular}
+\end{table}
+
+
+where the mean of the headways of $X_b$ is lower than the mean of the headways of $X_w$, which makes sense because as there is less activity in the city, the buses can operate at a lower frequency. In addition, the standard deviation of the headways is lower for $X_w$ because the traffic behaves in a more regular way and there are also less passengers to pick up at the stops. 
+
+As the means difference is approximately of 156 seconds, and the size of the samples is very large, the null hypothesis $H_0$ is clearly rejected.
+
+
+\section{Effect on the headways observed with our anomalies detection model}
+
+We have also performed an analysis of the consequences of the COVID-19 pandemic on the headways data using our anomaly detection model. In order to do this, we have estimated the covariance matrices and mean vectors of the models using the data obtained before the confinement for the 1-Dimensional Series ($N^{sw-b}_1 = 13130$) and for the 2-Dimensional Series ($N^{sw-b}_2 = 8088$), and we have used them to detect anomalies on the data obtained while the confinement, obtaining the results in Tables \ref{resultsanomcov1d} and \ref{resultsanomcov2d}:
+
+
+\begin{table}[H]
+\centering\small
+\caption{Anomalies detection results of applying the model constructed with the headways before COVID-19 on the headways after COVID-19, for 1-D Series of Headways ($N^{sw-w}_1 = 13937$).}
+\label{resultsanomcov1d}
+
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+\cellcolor[HTML]{C0C0C0}                                                              & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} \textbf{0.9}}}                                                                                                   & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.95}}                                                                                                                         & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.99}}                                                                                                                         \\ \cline{2-10} 
+\rowcolor[HTML]{C0C0C0} 
+\multirow{-2}{*}{\cellcolor[HTML]{C0C0C0}\backslashbox{size\textunderscore th}{conf}} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{1}                                                    & 92                                                      & 4.467                                                          & 2.949                                                   & 47                                                      & 3.234                                                          & 1.091                                                   & 6                                                       & 2.500                                                          & 0.108                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{2}                                                    & 64                                                      & 5.984                                                          & 2.748                                                   & 24                                                      & 5.375                                                          & 0.926                                                   & 2                                                       & 5.500                                                          & 0.079                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{3}                                                    & 48                                                      & 7.312                                                          & 2.518                                                   & 19                                                      & 6.263                                                          & 0.854                                                   & 2                                                       & 5.500                                                          & 0.079                                                   \\ \hline
+\end{tabular}
+\end{table}
+
+
+
+\begin{table}[H]
+\centering\small
+\caption{Anomalies detection results of applying the model constructed with the headways before COVID-19 on the headways after COVID-19, for 2-D Series of Headways ($N^{sw-w}_2 = 7093$).}
+\label{resultsanomcov2d}
+
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{9B9B9B} 
+\cellcolor[HTML]{C0C0C0}                                                              & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}{\color[HTML]{000000} \textbf{0.9}}}                                                                                                   & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.95}}                                                                                                                         & \multicolumn{3}{c|}{\cellcolor[HTML]{9B9B9B}\textbf{0.99}}                                                                                                                         \\ \cline{2-10} 
+\rowcolor[HTML]{C0C0C0} 
+\multirow{-2}{*}{\cellcolor[HTML]{C0C0C0}\backslashbox{size\textunderscore th}{conf}} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$N_{anom}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$\overline{size}$} & \multicolumn{1}{l|}{\cellcolor[HTML]{C0C0C0}$p_{anom}$} \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{1}                                                    & 61                                                      & 3.098                                                          & 2.664                                                   & 29                                                      & 2.069                                                          & 0.846                                                   & 3                                                       & 1.333                                                          & 0.056                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{2}                                                    & 41                                                      & 4.122                                                          & 2.383                                                   & 15                                                      & 3.067                                                          & 0.649                                                   & 1                                                       & 2.000                                                          & 0.028                                                   \\ \hline
+\cellcolor[HTML]{9B9B9B}\textbf{3}                                                    & 23                                                      & 5.783                                                          & 1.875                                                   & 8                                                       & 4.000                                                          & 0.451                                                   & 0                                                       & 0.000                                                          & 0.000                                                   \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.365]{../images/anom1dcovid.png}
+    \caption{Distribution of headways slices of size 1 in line 1, before (blue) and while (red) COVID-19.}
+    \label{fig:anom1dcovid}
+\end{figure}
+
+
+By testing the COVID-19 confinement data with the anomaly detector developed with the pre-pandemic data, we aimed to determine how extreme the irregularities in the headways would get in the COVID-19 scenario, as compared to the previous one. The results showed the detection of a lower percentage of anomalies than that established with the confidence hyperparameter.
+
+This is because the headways processed during the pandemic, in addition to being somewhat higher on average, have a much lower variance. This causes their confidence interval or ellipse to be much smaller, so that despite being shifted it is completely included within the ellipse obtained from the pre-pandemic headways (Figures \ref{fig:anom1dcovid} and \ref{fig:anom2dcovid}).
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/anom2dcovid.png}
+    \caption{Distribution of headways slices of size 2 in line 1, before (blue) and while (red) COVID-19.}
+    \label{fig:anom2dcovid}
+\end{figure}
+
+
+From these results we conclude that our developed anomaly detection model is not sensible to changes (even if they are quite significant) that cause the headways to behave in a more regular way. This is not necessarily a problem, since the principal objective of our anomaly detection model is to the detect situations that affect the service and behaviour of the buses in a negative way, such as big delays, accidents or traffic jams.

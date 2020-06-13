@@ -1,0 +1,94 @@
+
+
+\begin{frame}{Datos estáticos}
+    \begin{columns}[T,onlytextwidth]
+        \metroset{block=fill}
+        \column{0.34\textwidth}
+            
+            \vspace{3em}
+            
+            \begin{exampleblock}{GTFS \tikz[baseline]\node[coordinate](n1){};}
+                \scriptsize 
+                Formato de datos estáticos para servicios de transporte público:
+                \tiny
+                \begin{itemize}
+                    \item Rutas
+                    \item Paradas 
+                    \item Horarios
+                    \item Tarifas
+                \end{itemize}
+            \end{exampleblock}
+            
+        \column{0.5\textwidth}
+        
+            \tikz[baseline]\node[coordinate](t1){}; 
+            Mapa de líneas y paradas
+            \includegraphics[width=0.85\textwidth]{images/emturbanmap.png}
+            
+            \tikz[baseline]\node[coordinate](t2){}; 
+            \begin{block}{\scriptsize Diccionario de las líneas}
+                \scriptsize 
+                Datos más importantes para cada línea:
+                \tiny
+                \begin{itemize}
+                    \item Longitud total
+                    \item Paradas ordenadas con sus distancias al comienzo de la línea 
+                    \item Destinos
+                \end{itemize}
+            \end{block}
+        
+    \end{columns}
+    
+    \tikz[overlay]{\path[->]<1-> ([xshift=6em,yshift=-4.1em]n1) edge [bend left] ([xshift=1em,yshift=-1em]t1);}
+    \tikz[overlay]{\path[->]<1-> ([xshift=6em,yshift=-6.2em]n1) edge [bend right] ([xshift=0.5em,yshift=-5em]t2);}
+\end{frame}
+
+
+\begin{frame}{Datos en tiempo real}
+
+    \begin{columns}[T]
+        \metroset{block=fill}
+        \column{0.5\textwidth}
+            
+            \begin{exampleblock}{MobilityLabs EMT API}
+                \scriptsize 
+                Peticiones a métodos $\rightarrow$ información en tiempo real:
+                \begin{itemize}
+                    \item \textbf{TimeArrivalBus(stopId)}: próximos buses que van a llegar a la parada especificada.
+                \end{itemize}
+            \end{exampleblock}
+            \tikz[baseline]\node[coordinate](n1){};
+            \centering \tiny
+            \textbf{$D^s_b$ $\equiv$ Distancia restante de bus $b$ para llegar a parada $s$}\\
+        
+            \textbf{$T^s_b$ $\equiv$ Tiempo restante de bus $b$ para llegar a parada $s$}
+            \flushleft
+            \tikz[baseline]\node[coordinate](t1){};
+            \scriptsize Respuesta en formato json 
+            \vspace{1em}
+            \includegraphics[width=1\textwidth]{images/timearrivalbus.png}
+            
+        \column{0.5\textwidth}
+            \centering
+            \begin{alertblock}{Limitación}
+                \scriptsize 
+                330000 hits diarios
+            \end{alertblock}
+            {\scriptsize $\downarrow$ Selección de un subconjunto}
+            
+            \begin{block}{Líneas 1, 44, 82, 132 y 133}
+                \tiny
+                \begin{itemize}
+                    \item 272 paradas distintas.
+                    \item Una ráfaga de peticiones a todas las paradas cada 50 segundos ($T_m=50s$), desde las 7am a las 11pm.
+                \end{itemize}
+                
+                \centering
+                \includegraphics[width=0.6\textwidth]{images/newselectedlines.png}
+            \end{block}
+        
+    \end{columns}
+    
+    \tikz[overlay]{\path[->]<1-> ([xshift=0.5em,yshift=3em]n1) edge [bend right] ([xshift=0em,yshift=-0.5em]t1);}
+    
+\end{frame}

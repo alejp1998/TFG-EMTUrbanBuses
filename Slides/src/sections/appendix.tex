@@ -1,0 +1,65 @@
+
+
+\begin{frame}{Agradecimientos}
+    \centering{\huge{¡Muchas gracias!}}
+    
+    \vskip 1.5cm
+        
+    \includegraphics[height=1.5cm]{images/etsitupm.png}
+    \quad \quad
+    \includegraphics[height=1.5cm]{images/cabify.png}
+\end{frame}
+
+{\setbeamercolor{palette primary}{fg=black, bg=cyan}
+\begin{frame}[standout]
+  \centering{\huge{¿Alguna pregunta?}}
+\end{frame}
+}
+
+\begin{frame}[allowframebreaks]{Backup}
+
+    \begin{block}{Estimación de la posición}
+        \small
+        \begin{enumerate}
+            \item Seleccionamos parada con mínimo $D^s_b$ y obtenemos su distancia al inicio de la línea ($D^s$).
+            \item Calculamos distancia del bus al inicio de la línea: $D_b = D^s - D^s_b$.
+            \item Buscamos el punto $P$ de la línea cuya distancia al comienzo sea más cercana a $D_b$. 
+            \item Usamos las coordenadas de $P$ como estimación de la ubicación del bus.
+        \end{enumerate}
+    \end{block}
+    
+    \centering \includegraphics[width=1\textwidth]{images/headwaysequality.png}
+    
+    \small Ejemplo de la inestabilidad de los headways debido al número variable de pasajeros en cada parada \cite{gershenson2009}.
+    
+    \centering \includegraphics[width=1\textwidth]{images/hwovertime.png}
+    
+    \small Desaparición y aparición de series en adelantamientos. 
+    
+    \begin{table}
+        \begin{tabular}{@{} lr @{}}
+          \toprule
+          & Tiempo \\
+          \midrule
+          Limpieza & 1,21 h \\
+          $T^a_{s,l,b}$ & 4,29 h \\
+          $RT^{s_1,s_2}$ & 0,70 h\\
+          $\hw{1}{2}$  & 7,88 h \\ 
+          $S^{-1}$ y $\vec{\mu}$  & 0,72 h \\
+          \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \small Tiempos de procesamiento partiendo de 7,05 GB de datos.
+    
+    Usamos los 8 núcleos disponibles en la máquina con técnicas de procesamiento paralelo.
+    
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+
+  \bibliography{references}
+  \bibliographystyle{abbrv}
+
+\end{frame}
+

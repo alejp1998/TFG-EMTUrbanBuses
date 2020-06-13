@@ -1,0 +1,71 @@
+
+
+\section{Motivation of the project}
+\label{carbonfootprint}
+Nowadays public transport is an essential mobility agent in any big city, reducing the contribution of each citizen to the carbon footprint and making it easier and more accessible to travel along the city.\\
+
+Motivated by this fact, the present Final Degree Project is focused on the analysis of the data provided by the API of the EMT which contains estimates of the arrival times of the urban buses of Madrid, in order to characterize their behavior and develop a real-time anomaly detection model, that helps to identify rare events in the behaviour of the buses by analyzing the headways (or intervals of time) between them. This detected anomalies can be of great importance, as they provide a valuable feedback of the quality of the service given by the buses, which can then be used to take the decisions needed to improve it.
+
+\section{Objectives}
+
+The main goals established for this project are the following :
+
+\begin{itemize}
+    \item Data gathering of the arrival estimations given by the API of the EMT and descriptive statistical characterization of its main attributes.
+    \item Application of data cleansing techniques, followed by the development of estimators for the actual arrival times and positions of the buses and the characterization of their quality using statistical inference tools.
+    \item Obtainment of derived data from the arrival times estimations, such as the running times between stops and the headways (or time intervals) between buses.
+    \item Development of a real-time anomaly detection scheme on the headways data, using robust statistics and non-supervised machine learning techniques, which might help identifying accidents or other type of rare events affecting the buses behavior.
+    \item Design of a web visualization tool that helps to analyze and understand the developed tools, concretely the real-time anomaly detection on the headways, in a more intuitive way.
+\end{itemize}
+
+
+\section{Used tools}
+
+The software corresponding to the Project has been implemented using the ``Python''\cite{python} programming language. On the one hand we have used a series of ``Jupyter Notebooks'' \cite{jupyter} to carry out the data analysis. On the other hand, we have developed the scripts that gather, clean and process the data, as well as the ones that run the dashboard.
+
+All the notebooks, scripts and data used for the analysis can be found in the following GitHub repositories:
+
+\begin{itemize}
+    \item Notebooks : \href{https://github.com/Catedra-Cabify-ETSIT-UPM/EMT_UB_Notebooks}{github.com/Catedra-Cabify-ETSIT-UPM/EMT\textunderscore UB\textunderscore Notebooks}
+    \item Scripts and data: \href{https://github.com/Catedra-Cabify-ETSIT-UPM/EMTUrbanBuses}{github.com/Catedra-Cabify-ETSIT-UPM/EMTUrbanBuses}
+\end{itemize}
+
+
+\section{Literature review}
+
+In this Section we briefly comment some existing references related with the work developed in the Project.
+
+\subsection{Public transport in Madrid}
+
+
+The city of Madrid is known to have a very rich and complex public transport system based on different transport means and several
+intermodal exchange stations
+\cite{vassallo2012intermodal}.
+
+Recently, several studies have published some mobility analysis of the citizens
+\cite{edm2018},
+complemented with data
+visualizations
+\cite{gabriel2017visualizacion}.
+
+
+For the near future, the city is aiming to improve its public transport network in line with a city 
+sustainable development \cite{cristobal2002madrid}.
+
+
+\subsection{Headways analysis}
+
+
+The analysis of headways has been a research subject since several decades ago 
+\cite{adebisi1986mathematical}. In general, they show unstable behavior (some works have been performed to address it \cite{gershenson2009}), which can be an good indicator of anomalies in the line.
+Recently, a novel statistical analysis based on the Kurtosis measurement on headway distribution has been employed for problem detection in Available Vehicle Location (AVL) scenarios \cite{gokasar2019new}.
+
+
+
+\subsection{Anomaly detection}
+
+
+The field of anomaly detection has grown in the last three decades, specially from the point of view of detecting abrupt changes in systems \cite{basseville1993detection}. From the machine learning perspective, different types of the anomaly detection problems can be found depending on the objectives and available data (supervised, unsupervised and semi-supervised). 
+
+
+The scenario that we will address in this Project corresponds to the unsupervised anomaly detection problem \cite{goldstein2016comparative}, and we will employ some statistical tools for outlier detection \cite{cousineau2010outliers}. Finally we will also consider the time evolution, aimed to perform a future online detection ({\em Quickest Detection}) \cite{poor2008quickest}.

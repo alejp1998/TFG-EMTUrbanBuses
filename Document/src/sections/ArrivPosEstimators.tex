@@ -1,0 +1,145 @@
+
+In this chapter we will build two estimators based on the data collected: the first one aims to determine the moment when a bus has arrived at a stop, while the second one estimates the real time coordinates of the bus.
+
+Afterwards, we will characterize the performance of these estimators by comparing their results with the data about the trajectory and arrival times at the bus stops, obtained via a mobile phone travelling in the bus.
+
+
+\section{Ground truth data}
+To obtain the ``real'' data of the arrival times at the stops and the bus trajectory, we captured the coordinates from a mobile phone approximately every 2 seconds while on the way to the university (line F from ``Cuatro Caminos'' to the ``ETSIT UPM'' stop), we also registered the moment when the bus opened the doors upon arrival at each stop.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.175]{../images/trackeddata.png}
+    \caption{Phone tracked location (purple) and stops (green).}
+    \label{fig:trackeddata}
+\end{figure}
+
+This data still has certain errors, such as the maximum accuracy of the GPS location given by the phone and the human error when determining the moment a stop is reached, fortunately these issues do not significantly affect the characterization.
+
+We had planned to obtain a higher quantity of ground truth data to perform a better analysis of our estimators, but due to the COVID-19 prohibition to leave the house, this is all the ground truth data we have available. Because of this, the conclusions obtained have only the purpose of giving a general idea of how our estimators may perform.
+
+
+\section{Arrival time estimator}
+\label{sub:arrival_time_estimation}
+
+\subsection{Development of the estimator}
+To construct this estimator, we have first separated the data into subgroups that belong to the same class concerning the day, line, destination, stop and bus identifier attributes. In order to separate this subgroups into different trips to each stop, within each of these subgroups we ran through the rows in chronological order, so when the time difference between consecutive  rows is bigger than 10 minutes, we consider that the bus has passed that stop and the trip has ended, so the rows are extracted from the last index where the time between rows changed abruptly.
+
+Then, we estimate the bus arrival time by taking the first row which indicates that the bus was less than 45 seconds (5 seconds less than the interval at which we collect data) and more than 0 seconds away from the stop: the estimator is computed as the sum of the value of the ``datetime'' attribute of that row plus the remaining seconds of the ``estimateArrive'' attribute.  If this row doesn't exist, we use the closest row to the stop. 
+
+This is made this way instead of simply getting the row with the lower (or null) value of the ``estimateArrive'' because, as the buses remain stopped for approximately 30 seconds when they reach the stops, if we selected the row with ``estimateArrive'' equal to 0, then we would be making an error of up to 30 seconds in the estimated real arrival time. On the other hand, when the distance to the stop is low enough (but bigger than zero), the estimated arrival time usually has an error below 5 seconds.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.9]{../images/arrivaltimes.png}
+    \caption{Example of the arrival time estimation algorithm.}
+    \label{fig:arrivaltimes}
+\end{figure}
+
+We also add another attribute that indicates the position that a concrete trip occupies in all the trips that have been made to that stop on that same day by that bus, called ``day\textunderscore trip''.
+
+These estimations are computed inside the script ``preprocess\textunderscore clean\textunderscore data.py'', and are going to be referred in the rest of the document with the same notation as in \cite{yu2011bus}, so the arrival time at a stop ($s$) of a bus ($n$) belonging to the line ($l$) is: $T^{a}_{s,l,n}$.
+
+
+\subsection{Quality analysis of the estimator}
+
+If we compare the estimations provided by our algorithm with the ground truth data for every stop the bus has passed through, for the high frequency collected data and the low frequency data, we observe that the estimations made using the high frequency data do not clearly improve the results, meaning that our data is not very sensitive to the sampling rate, which is good news, since in the rest of the project we are going to work with the low frequency data.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.2]{../images/arrivestimerror.png}
+    \caption{Arrival estimations error in seconds for each stop for the low frequency data (red) and the high frequency data (blue).}
+    \label{fig:arrivestimerror}
+\end{figure}
+
+
+\subsection{Comparison with the arrival time estimations made by the API}
+\label{ssub:arrival_time_estimation_quality}
+
+Now, we are going to test the real time estimations of the time remaining to reach a stop provided by the API against the a-posteriori estimated time of arrival that we have just built. If we refer the arrival time estimation made by the API with the notation: $ETA_{s,l,n}$, then the error between the estimations is: 
+
+\begin{equation}
+    \epsilon_{s,l,n} = ETA_{s,l,n} - T^{a}_{s,l,n}
+\end{equation}
+ 
+Where a positive value means that the bus is going to arrive past the real time and a negative value means that the bus is going to arrive sooner than the real time.
+
+If we compute this error for all the data collected before the COVID-19 with an error lower than 5 minutes(we consider higher errors as outliers), and we also differentiate between the estimations made when the buses were less than 1 kilometers away from the stops and the ones made when the buses were between 1 km and 2 km away from the stops, we obtain the following:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/arrivestimapierror.png}
+    \caption{Error in seconds for the estimations made less than 1km away from the stop (blue) and the estimations made between 1 and 2 km from the stop (red).}
+    \label{fig:arrivestimapierror}
+\end{figure}
+
+As we can see, the error has a peak around 0 seconds, and, as expected, it has a higher variance the higher the distance to the stop is.
+
+To evaluate more specifically the performance of the estimations made by the API, we are going to compute the estimated unbiased mean value of the error ($\bar{\epsilon}$), an estimated standard deviation of the error ($s_{\epsilon}$) and the root mean square error ($RMSE$), which are obtained in the following way: 
+
+\begin{equation}
+    \bar{\epsilon} = \frac{1}{N}\sum\limits_{n \in N}{\epsilon_{s,l,n}}
+\end{equation}
+
+\begin{equation}
+    s_{\epsilon} = \sqrt{\frac{\sum\limits_{n \in N}{(\epsilon_{s,l,n} - \bar{\epsilon})^2}}{N}}
+\end{equation}
+
+\begin{equation}
+    \mbox{RMSE} = \sqrt{\overline{\epsilon}^2+s_{\epsilon}^2} = \sqrt{ \frac{\sum\limits_{n \in N}{\epsilon_{s,l,n}^2}}{N} }
+\end{equation}
+
+Where N represents the sample size, obtaining the results below:
+
+\begin{itemize}
+\item \textbf{Less than 1km from the stop: }
+    \begin{itemize}
+        \item \textbf{Mean error: } $\bar{\epsilon} = -4.62(s)$
+        \item \textbf{Standard deviation of the error: } $s_\epsilon = 51.57(s)$
+        \item \textbf{Root Mean Squared Error: } $RMSE = 51.79(s)$
+    \end{itemize}
+\item \textbf{Between 1 and 2km from the stop: }
+    \begin{itemize}
+        \item \textbf{Mean error: } $\bar{\epsilon} = -12.48(s)$
+        \item \textbf{Standard deviation of the error: } $s_\epsilon = 80.52(s)$
+        \item \textbf{Root Mean Squared Error: } $RMSE = 81.48(s)$
+    \end{itemize}
+\end{itemize}
+
+The mean error is also more separated from the ideal value (0 seconds) the higher the distance to the stop is, and, as both values are negative, we can conclude that the API tends to give estimations lower than the real time of arrival to prevent the users from losing the buses.
+
+\section{Position estimator}
+
+\subsection{Development of the estimator}
+This estimator has been constructed making use of the sequence of points that form each line and the distance remaining to arrive to each stop, provided by the API.
+
+This estimator is computed following three steps. First, knowing the coordinates of the stop, we look for the point on the line whose coordinates are closest to those of the stop, and we gather the distance from that point to the start of the line. We may call such quantity {\tt dsb} (distance from stop to beginning).
+
+Secondly, we subtract the remaining distance of the bus to reach the stop (provided by the API), to {\tt dsb}, and we obtain how far the bus is from the beginning of the line. 
+
+Finally we look for the point of the line whose distance to the beginning is closer to the one obtained, and we extract its coordinates, which constitute our estimate of the position of the bus.
+
+This method has limitations, since it only gives bus positions that are defined within the points that make up each line, but allows us to get a general idea of where the bus is located.
+
+\subsection{Quality analysis of the estimator}
+
+If we obtain the distance from the estimated coordinates of the bus to the coordinates obtained with a mobile phone along time (which we are going to refer as ``tracked coordinates''), we obtain the following:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{../images/posestimerror.png}
+    \caption{Distance in meters between tracked and calculated coordinates for the low frequency data (red) and the high frequency data (blue).}
+    \label{fig:posestimerror}
+\end{figure}
+
+As expected, the distance of the high frequency estimated coordinates to the tracked coordinates 
+is lower than the distance to the coordinates estimation obtained for the low frequency data. We can also see that the mean distance between the estimated and the tracked coordinates is around 150 meters, which is not very precise but it provides a general idea of where the bus is located.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.2]{../images/calculatedpaths.png}
+    \caption{Calculated path of bus 8607 for the low frequency data (red) and the high frequency data (blue).}
+    \label{fig:calculatedpaths}
+\end{figure}
+
+Note also that the high frequency estimated path has a higher resolution than the low frequency estimated path, but both of them give a good representation of the bus path compared to the tracked one.

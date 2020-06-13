@@ -1,0 +1,97 @@
+
+
+\begin{frame}{Caracterización de la API y los datos que proporciona}
+    \begin{columns}[T]
+        \metroset{block=fill}
+        \column{0.4\textwidth}
+            Línea F con $T_m=5s$
+            \begin{block}{\scriptsize Tasa de refresco}
+                \tiny Moda cada 5 s; media cada 30 s. 
+            \end{block}
+            
+            \begin{alertblock}{\scriptsize Geolocalización de buses\tikz[baseline]\node[coordinate](n1){};}
+                \tiny Próxima a la línea que siguen pero muy distante a su ubicación real.
+            \end{alertblock}
+            
+            \begin{block}{\scriptsize Velocidad del bus}
+                \tiny Valores constantes durante aprox. 30 s. Valor máximo 30 km/h.
+            \end{block}
+        
+        \column{0.6\textwidth}
+            \centering \scriptsize 
+            
+            \tikz[baseline]\node[coordinate](t1){};
+            Distancia a la línea
+            \includegraphics[width=0.8\textwidth]{images/distancetoline.png}
+            
+            \tikz[baseline]\node[coordinate](t2){};
+            Distancia a la parada a la que han llegado
+            \includegraphics[width=0.8\textwidth]{images/distancetostop.png}
+            
+            \tikz[baseline]\node[coordinate](t3){};
+            Posición de la parada vs posición del bus
+            \includegraphics[width=0.8\textwidth]{images/distancetostoponmap.png}
+        
+    \end{columns}
+    
+    \tikz[overlay]{\path[->]<1-> ([xshift=2em,yshift=0.5em]n1) edge [bend left] ([xshift=-3em,yshift=-1em]t1);}
+    \tikz[overlay]{\path[->]<1-> ([xshift=2em,yshift=0.5em]n1) edge [bend right] ([xshift=0.5em,yshift=-1em]t2);}
+    \tikz[overlay]{\path[->]<1-> ([xshift=2em,yshift=0.5em]n1) edge [bend right] ([xshift=0.5em,yshift=-1em]t3);}
+\end{frame}
+
+
+\begin{frame}{Limpieza de los datos}
+    \begin{columns}[T,onlytextwidth]
+        \metroset{block=fill}
+        \column{0.4\textwidth}
+            
+            \begin{alertblock}{\scriptsize Datos contaminados}
+                \scriptsize Pueden llevar a conclusiones erróneas:
+                \begin{itemize}
+                    \tiny
+                    \item Tiempo restante inusualmente elevado (A).
+                    
+                    \item Distancia restante menor que 0 (B).
+                    
+                \end{itemize}
+            \end{alertblock}
+            
+            \vspace{1em}
+            A.\includegraphics[width=0.85\textwidth]{images/outlier1.png}
+            \\[1em]
+            B.\includegraphics[width=0.85\textwidth]{images/outlier2.png}
+            
+        \column{0.5\textwidth}
+            
+            \vspace{1em}
+            \textbf{Criterios de consistencia}
+            
+            \scriptsize
+            \begin{itemize}
+                \item Consistencia entre línea, destino y parada.
+                \item Distancias restantes:
+                \begin{itemize}
+                \tiny
+                    \item $>=$ 0
+                    \item $<$ longitud de la línea
+                \end{itemize}
+                
+                \item Tiempos restantes:
+                \begin{itemize}
+                \tiny
+                    \item $>=$ 0
+                    \item $<$ 2 horas 
+                    \item $<$ tiempo que se tardaría en recorrer la línea completa a 7,2 km/h
+                \end{itemize}
+                
+                \item Velocidad:
+                \begin{itemize}
+                \tiny
+                    \item $>=$ 0
+                    \item $<$ 120 km/h
+                \end{itemize}
+            \end{itemize}
+        
+    \end{columns}
+    
+\end{frame}

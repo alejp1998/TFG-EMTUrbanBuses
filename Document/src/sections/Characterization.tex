@@ -1,0 +1,131 @@
+
+In this Chapter we characterize the API and the data it provides, in terms of its quality and basic statistical properties for future analysis or processing purposes. Precisely, we will study the behavior of the ``estimateArrive'', ``DistanceBus'' as the bus location (``lat'' and ``lon'') attributes, as well as the refresh rates of the API.
+
+To characterize the performance of the API more accurately, 
+instead of using the data set from the previous section, we are going to focus on line 91(F), making requests to all its stops every five seconds for one and a half hours, storing the data on a new csv called ``buses\textunderscore data\textunderscore characterization.csv''.
+
+
+\subsection{Refresh rate}
+In order to illustrate how often the location values provided by the API are updated, the following representation has been constructed:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{../images/gpsrefresh.png}
+  \caption{Location refresh time.}
+  \label{fig:gpsrefresh}
+\end{figure}
+
+We can see that the coordinates of the buses change, on average, every 30 seconds, but most of the times we perform a request to the API we get a new value for them.
+
+
+\subsection{Distance to nearest point on the line}
+In order to check the quality of the given coordinates, we calculate the distance from them to the nearest point on the route line that the buses should follow. The results obtained are the following:
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.3]{../images/distancetoline.png}
+\caption{Distance to the line.}
+\label{fig:distancetoline}
+\end{figure}
+
+Note that most of the given coordinates are less than 20 meters from the line, and only a few of them are more than 100 meters apart. But, as we can see in Figure \ref{fig:coordshistogram}, they are not at all evenly distributed along the trajectory, since they accumulate mainly over two areas of the line:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.375]{../images/coordshistogram.png}
+    \caption{Bus 8607 given coordinates (blue), with the line it should follow (black).}
+    \label{fig:coordshistogram}
+\end{figure}
+
+\subsection{Distance to the stop the bus has just arrived}
+When the buses arrive at a stop (their remaining time and distance to the stop are equal to zero), their coordinates should be close to those of the stop. Thus, for this restricted scenario we have represented the distance between the buses and the stops in the following graph:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/distancetostop.png}
+    \caption{Distances from the buses to the stop they have arrived.}
+    \label{fig:distancetostop}
+\end{figure}
+
+Surprinsingly, the distances are very high, indicating that the quality of the location provided by the API is quite poor.
+
+In order to clearly illustrate this fact, we have constructed Figure \ref{fig:distancetostoponmap}.
+Note that the given coordinates have practically not moved from ``Cuatro Caminos'' (they correspond to the points in the lower right of Figure \ref{fig:coordshistogram}), while the bus has actually moved to the ``ETSIT UPM'' stop.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{../images/distancetostoponmap.png}
+    \caption{Position of the bus 8607 (black) and the stop (green) on the map, joined with a red line.}
+    \label{fig:distancetostoponmap}
+\end{figure}
+
+\subsection{Relationship between time and distance remaining to stop}
+
+In order to check the relationship between time and distance remaining at the stop, we have first estimated the correlation between both attributes computing Pearson's correlation coefficient, and, as expected, this takes a high a high value:
+
+$$Correlation\; between\; distance\; and\; time = 0.8016$$
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/distancetimeregression.png}
+    \caption{Distance vs time remaining regression.}
+    \label{fig:distancetimeregression}
+\end{figure}
+
+In addition, we have performed an ordinary least squares (OLS) regression, to obtain an estimate of the linear relationship between both variables.
+
+$$DistanceRemaining(m) = 3.15669(m/seg)*TimeRemaining(seg)$$
+
+As it can be seen in Figure \ref{fig:distancetimeregression}, the points are grouped into small subgroups with similar slopes, which can be interpreted as intervals where the bus maintains a constant speed.
+
+\subsection{Speed of the buses}
+Finally, we are going to analyze the instantaneous speed of the buses. To do this, we are going to differentiate between two ways of calculating the speed:
+
+\begin{itemize}
+    \item \textbf{Speed:} distance traveled divided by time spent between rows for the same bus.
+    \item \textbf{Average speed until next stop:} DistanceBus attribute divided by estimateArrive attribute for each row.
+\end{itemize}
+
+As we did with the coordinates, we have obtained the refresh times for both speeds, considering that these are updated when the current speed varies more than 0.15 m/s with respect to the average speed calculated since the last update.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \includegraphics[width=1.03\linewidth]{../images/speedrefresh.png}
+  \caption{Speed.}
+  \label{fig:speedrefresh}
+\end{subfigure}
+\begin{subfigure}{.475\textwidth}
+  \centering
+  \includegraphics[width=0.98\linewidth]{../images/speedaltrefresh.png}
+  \caption{Average speed until next stop.}
+  \label{fig:speedaltrefresh}
+\end{subfigure}
+\caption{Speed refresh times comparison.}
+\label{fig:speedscomparison}
+\end{figure}
+
+As we can see in Figure \ref{fig:speedscomparison}, the average speed until next stop presents significant variations less frequently than the other one, which may be due to the fact that the accuracy of the ``datetime'' attribute value is much higher than that of the ``estimateArrive'' attribute, causing it to vary slightly around the value of the alternatively calculated speed (Figure \ref{fig:speedovertime}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.345]{../images/speedovertime.png}
+    \caption{Speed (green) and average speed until next stop (purple) of bus 8607 over time, with the stops arrivals (grey) and the departures (black) and the distance remaining to the stop in km (orange).}
+    \label{fig:speedovertime}
+\end{figure}
+
+When we represent both speeds over time, we can see that the speed of the bus remains almost constant for a period of time, changing suddenly; this change takes place at the same time the distance remaining to the stop changes abruptly. These abrupt changes seem to be related to the moment when the API receives new real information about the bus status, which is transformed in a change of the tendency the bus was following.
+
+Another pathological behavior can be seen in the evolution of the remaining distance to the stop when the bus is stopped and waiting at the first stop of the journey (left part of the figure). 
+Despite the fact that the bus is stopped, the speed is 5m/s, so the remaining distance decreases, until a correction is applied to the value, which returns to its initial value and begins to descend again, at the same time that the estimated speed increases. This happens usually when the bus is waiting to leave the first stop of each line direction, because the time remaining to the stop also takes into account the waiting time of the bus at the first stop, so it is continuously descending while the estimated distance to the stop remains the same, thus producing an increase in the estimated speed.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.3]{../images/speeds.png}
+    \caption{Speeds histogram.}
+    \label{fig:speeds}
+\end{figure}
+
+Finally, as we can see in the histogram above, the speed for the buses in line 91(F) are usually between 1 and 7 meters per second. Having a peak at the null speed as most of the time they are stopped.

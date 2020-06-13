@@ -1,0 +1,156 @@
+
+
+\begin{frame}{Datos de campo y posición de los buses}
+    \begin{columns}[T]
+        \metroset{block=fill}
+        \column{0.55\textwidth}
+            \begin{exampleblock}{\scriptsize Datos de campo o sobre el terreno}
+                \tiny Captura de las coordenadas de teléfono en trayecto desde ``Cuatro Caminos'' hasta ``ETSIT UPM'' (Línea F):
+                \begin{itemize}
+                    \item Registro de instante de apertura de puertas al llegar a cada parada.
+                \end{itemize}
+                Datos escasos debido al COVID-19.
+            \end{exampleblock}
+            
+            \vspace{3em}
+            
+            \begin{block}{\scriptsize Estimación de la posición}
+                \tiny 
+                \begin{itemize}
+                    \item Calculada a partir de $D^s_b$ y datos estáticos de la línea.
+                    \item No empleada en algoritmos, solo aporta idea general de la ubicación de los buses.
+                \end{itemize}
+            \end{block}
+            \vspace{1.5em}
+            \tiny 
+            
+        \column{0.05\textwidth}    
+        
+        \column{0.48\textwidth}
+            
+            \vspace{0.65em}
+            
+            \includegraphics[width=0.95\textwidth]{images/trackeddata.png}
+            
+            \tiny Ruta seguida (morado) y paradas (verde) obtenidas con el teléfono.
+            
+            \vspace{1em}
+            {\centering 
+            \textbf{$\downarrow$ La distancia de la posición estimada a la real es de 150 m en media} 
+            }
+            \vspace{1em}
+            
+            \includegraphics[width=0.95\textwidth]{images/calculatedpaths.png}
+            
+            \tiny Ruta del bus obtenida con nuestro estimador de la posición para $T_m = 50$ s (rojo) y $T_m = 5$ s (azul).
+            
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{Tiempos de llegada: $T^a_{s,l,b}$}
+    
+    \begin{columns}[T]
+        \metroset{block=fill}
+        \tiny
+        \column{0.35\textwidth}
+            \begin{block}{\scriptsize Estimación de $T^a_{s,l,b}$}
+                Tiempo de llegada del bus $b$ de la línea $l$ a la parada $s$.
+                
+                Calculado a partir de la primera instancia del bus que esté a menos de 45 s de la parada:
+                \begin{itemize}
+                    \item Error menor a 5 s.
+                    \item Evitamos errores mayores (tiempo de parada elevado).
+                \end{itemize}
+            \end{block}
+        \column{0.75\textwidth}
+            \includegraphics[width=1\textwidth]{images/arrivaltimes.png}
+    \end{columns}
+    
+    \vspace{1.5em}
+    
+    \begin{columns}[T]
+        \column{0.4\textwidth}
+            \centering \footnotesize
+            \begin{table}
+                \begin{tabular}{@{} lcc @{}}
+                  \toprule
+                  & $D^s_b<1km$ & $1km<D^s_b<2km$ \\
+                  \midrule
+                  $\bar{\epsilon}$ & -4,62 s & -12,48 s \\
+                  $s_\epsilon$ & 51,57 s & 80,52 s \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            
+            \tiny $\bar{\epsilon}$ y $s_\epsilon$ del error de las estimaciones de la API con respecto a nuestras estimaciones.
+        
+        \column{0.6\textwidth}
+            \centering
+            \includegraphics[width=0.85\textwidth]{images/arrivestimerror.png}
+            
+            \tiny Error respecto a los datos de campo para $T_m = 50s$ (rojo) y $T_m = 5s$ (azul).
+    \end{columns}
+\end{frame}
+
+
+\begin{frame}{Tiempos entre paradas: $RT^{s_1,s_2}$}
+    
+    \centering Estimación del tiempo entre dos paradas consecutivas $s_1$ y $s_2$
+    \begin{equation}
+        \boxed{RT^{s_1,s_2} = T^{a}_{s_2,l,b} - T^{a}_{s_1,l,b}}\nonumber
+    \end{equation}
+    
+    
+    \vspace{3em}
+    
+    {\small $\bar{\epsilon}$ y $s_\epsilon$ de los tiempos entre paradas dados por la API}
+    \begin{table}
+        \begin{tabular}{@{} lr @{}}
+          \toprule
+          $\bar{\epsilon}$ & -8,16 s \\
+          $s_\epsilon$ & 65,53 s \\
+          \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    
+\end{frame}
+
+
+\begin{frame}{Definición e importancia de los headways: $\hw{1}{2}$}
+    \metroset{block=fill}
+    \vspace{1em}
+    \begin{block}{\small \textit{Headway}: intervalo de tiempo entre buses consecutivos $b_1$ y $b_2$}
+        \scriptsize $\uparrow$ Regularidad de headways $\Rightarrow$ $\downarrow$ Tiempo de espera de los pasajeros en las paradas.
+    \end{block}
+    
+    {\centering \includegraphics[width=1\textwidth]{images/headwayssimple.png}}
+    
+    \begin{alertblock}{\small Inestabilidad de headways}
+        \scriptsize
+        Si tenemos los buses $b_1$, $b_2$ y $b_3$:
+        \begin{itemize}
+            \item Retraso de $b_2$ $\Rightarrow$ $\uparrow \hw{1}{2}$ y $\downarrow \hw{2}{3}$. 
+            \item Adelanto de $b_2$ $\Rightarrow$ $\downarrow \hw{1}{2}$ y $\uparrow \hw{2}{3}$.
+        \end{itemize}
+    \end{alertblock}
+    
+\end{frame}
+
+
+\begin{frame}{Estimación de los headways: $\hw{1}{2}$}
+    \metroset{block=fill} \vspace{0.5em}
+    %{\tiny $T^s_b$ $\equiv$ Tiempo restante de bus $b$ para llegar a parada $s$}
+    \begin{block}{\small Estimación de $\hw{1}{2}$}
+        \footnotesize \centering
+        ($RT^{s_1,s_2}$ y $T^s_b$) $\rightarrow$ $TTLS_{b}$ (tiempo restante para llegar a la última parada)
+    \end{block}
+    
+    \begin{equation}
+        \boxed{\hw{1}{2} = \overline{TTLS_{b_2}} - \overline{TTLS_{b_1}}}\nonumber
+    \end{equation} 
+    
+    \centering \scriptsize
+    \includegraphics[width=1\textwidth]{images/headways.png}
+\end{frame}

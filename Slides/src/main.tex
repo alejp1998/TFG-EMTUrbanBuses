@@ -1,0 +1,185 @@
+\documentclass{beamer}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Usual LaTeX Packages %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc} %Codificacion utf-8
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathrsfs} 			% For Weinberg-esque letters
+\usepackage{cancel}				% For "SUSY-breaking" symbol
+\usepackage{slashed}            % for slashed characters in math mode
+\usepackage{bbm}                % for \mathbbm{1} (unit matrix)
+\usepackage{amsthm}				% For theorem environment
+\usepackage{multirow}			% For multi row cells in table
+\usepackage{arydshln} 			% For dashed lines in arrays and tables
+
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes}
+
+
+\graphicspath{{images/}}	% Put all images in this directory. Avoids clutter.
+
+\usetheme[progressbar=frametitle]{metropolis}
+\usepackage{appendixnumberbeamer}
+
+\usepackage{booktabs}
+\usepackage[scale=2]{ccicons}
+
+\usepackage{pgfplots}
+\usepgfplotslibrary{dateplot}
+
+\usepackage{xcolor}
+\usepackage{xspace}
+\newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
+
+% To make comments
+\usepackage{todonotes}
+\usepackage{soul}
+\usepackage{hyperref}
+\newcommand{\tb}{\textcolor{blue}}
+\newcommand{\tr}{\textcolor{red}}
+\colorlet{RED}{red}
+\newcommand{\tgr}{\textcolor{lightgreen}}
+\colorlet{RED}{red}
+\newcommand{\tod}{\todo[color=bluep]}
+\newcommand{\todi}{\todo[inline,color=bluep]}
+\newcommand{\tody}{\todo[inline,color=yellow]}
+\definecolor{bluep}{RGB}{3, 252, 244}
+\definecolor{lightgreen}{HTML}{28B463}
+
+
+\newcommand{\titulo}{Análisis estadístico de tiempos de llegada y detección de anomalías en los buses urbanos de la EMT}
+\newcommand{\TITULO}{ANÁLISIS ESTADÍSTICO DE TIEMPOS DE LLEGADA Y DETECCIÓN DE ANOMALÍAS EN LOS AUTOBUSES URBANOS DE LA EMT}
+\newcommand{\titlee}{Statistical arrival time analysis and anomaly detection in the EMT urban buses}
+\newcommand{\me}{Alejandro Jarabo Peñas}
+\newcommand{\ME}{ALEJANDRO JARABO PEÑAS}
+\newcommand{\tutor}{Pedro José Zufiria Zatarain}
+\newcommand{\TUTOR}{PEDRO JOSÉ ZUFIRIA ZATARAIN}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%% NOTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Arrival time
+\newcommand{\runningTime}{\ensuremath{\Delta T_{d,o,k}}}
+
+%Headway
+\newcommand*{\hw}[2]{
+    \Delta T_{b_{#1},b_{#2}}
+}
+
+%Headway
+\newcommand*{\hway}[2]{
+    \Delta T_{#1,#2}
+}
+
+%Scientifical notation
+\newcommand*{\scinot}[2]{
+    #1 \cdot 10^{#2}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{\me}
+\title{\titulo}
+\institute{ETSIT UPM}
+\date{\today}
+
+\mode<presentation>
+{
+    \usetheme{default}      % or try Darmstadt, Madrid, Warsaw, ...
+    \usecolortheme{default} % or try albatross, beaver, crane, ...
+    \usefonttheme{default}  % or try serif, structurebold, ...
+    \setbeamertemplate{navigation symbols}{}
+    \setbeamertemplate{caption}[numbered]
+    \setbeamercolor{background canvas}{bg=white}
+    \setbeamercolor{progress bar}{%
+      use=alerted text,
+      fg=purple,
+      bg=alerted text.fg!50!black!30
+    }
+} 
+
+\begin{document}
+\tikzstyle{every picture}+=[remember picture]
+
+{\setbeamertemplate{sidebar right}{\llap{
+%Image commented for a faster compilation
+\includegraphics[width=\paperwidth,height=0.7\paperheight]{images/busemt.png}
+}}
+\begin{frame}[c]
+\begin{center}
+    
+    \vspace{2em}
+    
+    \colorbox{white}{\parbox{\dimexpr\linewidth-2\fboxsep}{\centering\large \textcolor{black}{\textsc{\titulo}}}}
+	%\Large \textcolor{white}{\textsc{\title}}
+	
+	\vspace{12em}
+	
+	Autor: \me.\\
+	Tutor: \tutor.\\
+	
+	\vspace{0.5em}
+	
+	\includegraphics[height=1cm]{images/catedracabify.png} \quad
+	\includegraphics[height=1.3cm]{images/etsitupm.png}\\
+\end{center}
+\end{frame}
+}
+
+\begin{frame}{Tabla de contenidos}
+  \setbeamertemplate{section in toc}[sections numbered]
+  \tableofcontents%[hideallsubsections]
+\end{frame}
+
+
+\section{Motivación y resumen}
+
+\input{sections/resumen} 
+
+
+\section{Datos disponibles y su adquisición}
+
+\input{sections/dataacquisition} 
+
+
+\section{Análisis y limpieza de los datos}
+
+\input{sections/dataanalysis} 
+
+
+\section{Estimación y análisis de datos derivados}
+
+\input{sections/deriveddata} 
+
+
+\section{Detección de anomalías en tiempo real sobre los headways}
+
+\input{sections/anomalydetection} 
+
+
+\section{Influencia del COVID-19}
+
+\input{sections/covid} 
+
+
+\section{Dashboard}
+
+\input{sections/dashboard} 
+
+
+\section{Conclusiones y futuras líneas de trabajo}
+
+\input{sections/conclusions}
+
+
+\appendix
+
+\input{sections/appendix}
+
+\end{document}

@@ -1,0 +1,36 @@
+
+
+\begin{frame}{Motivación y resumen}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.39\textwidth}
+        \textsc{Importancia del transporte público:}
+        
+        \vspace{1em}
+    
+        \small \tgr{$\downarrow$ Contribución de cada ciudadano a la huella de carbono.}
+        
+        \vspace{0.5em}
+        
+        \small \tgr{$\uparrow$ Accesibilidad y facilidad de los desplazamientos por las ciudades.}
+        
+    \column{0.6\textwidth}
+        \textsc{Metodología}
+        \centering \metroset{block=fill}
+        \begin{block}{\scriptsize Recopilación, análisis y limpieza de los datos}
+            \tiny Tiempos de llegada a cada parada proporcionados por la API
+        \end{block}
+        \scriptsize $\downarrow$
+        \begin{block}{\scriptsize Estimación de datos derivados}
+            \tiny Tiempos entre paradas, headways, etc.
+        \end{block}
+        \scriptsize $\downarrow$
+        \begin{alertblock}{\scriptsize Detección de anomalías en tiempo real sobre los headways}
+            \tiny Series k-Dimensionales de headways y distancia de Mahalanobis
+        \end{alertblock}
+        \scriptsize $\downarrow$
+        \begin{block}{\scriptsize Monitorización de la detección de anomalías}
+            \tiny Dashboard con visualizaciones en tiempo real
+        \end{block}
+        
+  \end{columns}
+\end{frame}

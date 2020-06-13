@@ -1,0 +1,361 @@
+
+
+\begin{frame}{Detección de anomalías en los headways}
+    \metroset{block=fill}
+    
+    \begin{block}{\scriptsize Importancia}
+        \scriptsize Mejora la eficiencia del transporte público.
+        
+        Ayuda a determinar causas y buscar soluciones.
+    \end{block}
+    
+    \begin{block}{\scriptsize Problema de aprendizaje no supervisado}
+        \scriptsize 
+        Buscamos patrones anómalos en datos que no han sido previamente etiquetados.
+    \end{block}
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/unsupervised.png}
+    %\includegraphics[width=0.85\textwidth]{images/unsupervised2.jpg}
+\end{frame}
+
+\def\hwvector{
+    \begin{bmatrix}
+       \hw{1}{2} & \hw{2}{3} & \cdots & \hw{m-1}{m}
+    \end{bmatrix}
+}
+
+
+\begin{frame}{Enfoques al problema}
+    
+    \Large Construyen el concepto de \\ \textbf{Series k-Dimensionales de Headways}:
+    
+    \begin{columns}[T]
+        \metroset{block=fill}
+        \column{0.5\textwidth}
+            
+            \begin{block}{$1.^{\rm{er}}$ enfoque}
+                \scriptsize $b_1$ $\equiv$ bus más cercano al final 
+                \\[1em]
+                Adelantamientos $\Rightarrow$ desaparición de series, así como la aparición de nuevas series.
+            \end{block}
+            
+        \column{0.5\textwidth}
+            \begin{exampleblock}{$2.^{\rm{o}}$ enfoque}
+                \scriptsize $b_1$ $\equiv$ bus que entró en primer lugar
+                \\[1em]
+                Adelantamientos $\Rightarrow$ headways negativos.
+            \end{exampleblock}
+        
+    \end{columns}
+    
+    \vspace{1em}
+    
+    \normalsize 
+    \textbf{Conceptos comunes:}
+    \begin{itemize}
+        \item Vector de headways.
+        \item Ventana deslizante sobre el vector de headways.
+        \item Series temporales de headways.
+    \end{itemize}
+    
+\end{frame}
+
+
+\begin{frame}{Vector de headways}
+    \metroset{block=fill}
+    \centering
+    
+    \begin{alertblock}{\small Alta correlación entre headways consecutivos}
+        \scriptsize $\hw{1}{2}$ y $\hw{2}{3}$ tienen $b_2$ en común.
+    \end{alertblock}
+    
+    \scriptsize \textbf{$\downarrow$ Cuantos más headways analicemos conjuntamente, más información tenemos para considerar si son o no anómalos}
+    
+    \begin{columns}[T]
+        \column{0.33\textwidth}
+            
+            \begin{exampleblock}{\small Vector de headways}
+                \scriptsize 
+                \textbf{-} 1 por cada una de las 2 direcciones $d$ de la línea $l$.
+                
+                \textbf{-} Se actualiza cada instante de muestreo $t_i$.
+            \end{exampleblock}
+            \vspace{2em}
+            \footnotesize $m$ $\equiv$ número de buses circulando por la dirección de la línea
+        \column{0.75\textwidth}
+            \small
+            \begin{gather}
+                \boxed{H_{l,d,m}(t_i) = \hwvector} \nonumber \\
+                \forall m \in \mathbb{N} , m>1 \nonumber
+            \end{gather}
+            
+            
+            \centering 
+            \includegraphics[width=1\textwidth]{images/headwaysvector.png}
+            \centering \scriptsize Ejemplo vector de headways.
+            
+    \end{columns}
+    
+\end{frame}
+
+\def\hwslice{
+    \begin{bmatrix}
+        \hw{i}{i+1} & \hw{i+1}{i+2} & \cdots & \hw{k+i-1}{k+i}
+    \end{bmatrix}
+}
+
+\begin{frame}{Ventana deslizante sobre el vector de headways}
+    \metroset{block=fill}
+    \centering
+    
+    \begin{alertblock}{\small $m$ varía con el tiempo}
+        \scriptsize Frecuentemente entre 2 valores si acotamos lo suficiente el intervalo de análisis.
+    \end{alertblock}
+    
+    \scriptsize \textbf{$\downarrow$ Necesitamos ser capaces de analizar vectores con $m$ variable}
+    
+    \begin{columns}[T]
+        \column{0.35\textwidth}
+            \begin{exampleblock}{\small Ventana deslizante sobre el vector de headways}
+                \scriptsize Divide el vector de headways en rodajas de tamaño $k$:
+                
+                \textbf{-} ($m-k$) rodajas por vector.
+                
+                \textbf{-} Aplicable si $m \geq k+1$.
+            \end{exampleblock}
+            \vspace{2em} 
+            \centering \small
+            k $\equiv$ D \\
+            $\uparrow$ k $\Rightarrow$ $\downarrow$ $N^{sw}_{k}$
+            
+        \column{0.72\textwidth}
+            \footnotesize 
+            \begin{gather}
+                \boxed{H^{slice}_{l,d,m,k,i} = \hwslice} \nonumber \\ 
+                1 \leq k \leq m-1 ; \; \; 1 \leq i \leq m-k \nonumber
+            \end{gather}
+            
+            \centering 
+            \includegraphics[width=1\textwidth]{images/headwayssw.png}
+            \scriptsize Ejemplo ventana deslizante k=2.
+            
+        
+    \end{columns}
+    
+\end{frame}
+
+
+\begin{frame}{Línea 132 en días laborables de 10am a 11am: Ejemplo 1}
+    %\metroset{block=fill}
+    \centering Aplicación de las ventanas deslizantes
+     
+    \begin{columns}[T]
+        \tiny
+        \column{0.37\textwidth}
+            \centering
+            \includegraphics[width=1\textwidth]{images/buses132-1011.png}
+            
+            Número de vectores de headways para cada tamaño $(m-1)$: $N_{(m-1)}$.
+            
+        \column{0.26\textwidth}
+            \centering
+            \begin{gather}
+                \boxed{N^{sw}_{k} = \sum_{m=k+1}^{m_{\max}+1} (m-k)N_{(m-1)}} \nonumber \\
+                1 \leq k \leq m_{\max}-1 \nonumber
+            \end{gather}
+        \column{0.37\textwidth}
+            \centering
+            \includegraphics[width=1\textwidth]{images/slices132-1011.png}
+            
+            Número de rodajas de headways para cada tamaño de ventana deslizante $k$: $N^{sw}_{k}$.
+            
+    \end{columns}
+    
+    \vspace{1.5em}
+    
+    \begin{columns}[T]
+
+        \column{0.45\textwidth}
+            \centering Distribución de los datos de cada ventana deslizante
+            
+            \includegraphics[width=1\textwidth]{images/slices-1-density.png}
+            
+            \tiny Distribución de $N^{sw}_{1}$.
+            
+        \column{0.45\textwidth}
+            \centering
+            \includegraphics[width=0.75\textwidth]{images/slices-2-density.png}
+            
+            \tiny Distribución de $N^{sw}_{2}$.
+            
+    \end{columns}
+
+\end{frame}
+
+\def\busgroup{
+    \begin{bmatrix}
+       b_1 & b_2 & \cdots & b_k & b_{(k+1)}
+    \end{bmatrix}
+}
+
+\def\hwgroup{
+    \begin{bmatrix}
+       \hw{1}{2}(t_i) & \hw{2}{3}(t_i) & \cdots & \hw{k}{(k+1)}(t_i)
+    \end{bmatrix}
+}
+
+\begin{frame}{Series temporales de headways}
+    \metroset{block=fill}
+    \begin{exampleblock}{\small Serie temporal de headways}
+        \scriptsize Una serie temporal de headways está formada por todas las rodajas $H^{slice}_{l,d,m,k,i}$ que corresponden al grupo de buses consecutivos $g_k = \busgroup$:
+        
+        \begin{center}
+            $\uparrow$ dimensión $\Rightarrow$ $\downarrow$ duración de la serie
+        \end{center}
+    \end{exampleblock}
+    
+    \small
+    \begin{gather}
+        \boxed{H_{g_k}(t_i) = \hwgroup} \nonumber
+    \end{gather}
+    
+    \vspace{3em}
+    \normalsize
+    \textbf{Series k-Dimensionales de Headways:} conjunto de todas las series temporales de tamaño $k$.
+    
+\end{frame}
+
+
+\begin{frame}{Línea 132 en días laborables de 10am a 11am: Ejemplo 2}
+    %\metroset{block=fill}
+    \centering
+    \begin{columns}[T]
+
+        \column{0.59\linewidth}
+            \centering \vspace{2.5em}
+            \scriptsize Muestra de las Series 1-D obtenidas.
+            \includegraphics[width=1.1\textwidth]{images/slices-1-series.png}
+            
+            
+        \column{0.45\linewidth}
+            \centering
+            \scriptsize Muestra de las Series 2-D obtenidas {\tiny (variable temporal proyectada en el espacio bidimensional de variables)}.
+            \includegraphics[width=1\textwidth]{images/slices-2-series.png}
+            
+            
+    \end{columns}
+
+    Análogo para mayores dimensiones. En este ejemplo podemos construir un modelo de detección de anomalías como máximo de dimensión 7, ya que $N^{sw}_{6} = 147$,  $N^{sw}_{7} = 6$ y $N^{sw}_{8} = 0$.
+\end{frame}
+
+
+\begin{frame}{Modelo de detección de anomalías (i)}
+    \metroset{block=fill}
+    \begin{columns}[T]
+        
+        \column{0.5\linewidth}
+            \centering \small
+            \textbf{Asumimos que las series N-Dimensionales de headways siguen aproximadamente una distribución normal N-dimensional.}
+            
+            $\downarrow$
+            
+            \begin{block}{\footnotesize Distancia de Mahalanobis ($D_M$)} 
+                \scriptsize Desviaciones estándar que separan rodaja $\vec{x}$ del conjunto de rodajas D (con media $\vec{\mu}$ y matriz de covarianza $S$).
+            \end{block}
+            
+            \begin{equation}
+                \boxed{D_M(\vec{x}) = \sqrt{(\vec{x}-\vec{\mu})^T S^{-1} (\vec{x}-\vec{\mu})}} \nonumber
+            \end{equation}
+
+        \column{0.55\linewidth}
+            \centering \footnotesize
+            \begin{block}{\scriptsize Región de confianza}
+                \scriptsize Podemos calcular un valor umbral de $D_M$ que contenga un porcentaje deseado de rodajas.
+            \end{block}
+            
+            \includegraphics[width=1\textwidth]{images/conf-ellipses.png}
+            \scriptsize Elipses de confianza (k=2).
+            
+    \end{columns}
+    
+\end{frame}
+
+
+\begin{frame}{Modelo de detección de anomalías (ii)}
+    \metroset{block=fill}
+    \begin{columns}[T]
+    
+        \column{0.55\linewidth}
+            \begin{block}{\small Series temporales de $D_M$}
+                \scriptsize Calculamos $D_M$ para cada muestra de las series temporales de headways.
+            \end{block}
+            
+            \begin{block}{\scriptsize Hiperparámetros}
+                \scriptsize 
+                \begin{itemize}
+                    \item \textbf{Confianza ($conf$):} umbral $D_{M,th}$ a partir del cuál una subserie es potencialmente anómala.
+                    \item \textbf{Umbral de duración ($dur\textunderscore th$):} mínimo número de muestras consecutivas por encima de $D_{M,th}$ para detectar la subserie como anómala.
+                \end{itemize}
+                
+            \end{block}
+            
+            
+        \column{0.55\linewidth}
+            \centering 
+            \includegraphics[width=1\textwidth]{images/detected-2d-anoms.png}
+            
+            \scriptsize Subseries anómalas detectadas con $conf=95\%$ y $dur\textunderscore th= 1$ en las series 2-D del ejemplo 2.
+            
+            
+    \end{columns}
+    
+\end{frame}
+
+
+
+\begin{frame}{Línea 132 en días laborables de 10am a 11am: Ejemplo 3}
+    \metroset{block=fill}
+    \begin{columns}[T]
+        \column{0.5\textwidth}
+            \scriptsize
+            \begin{block}{Parámetros de rendimiento:}
+                \begin{itemize}
+                    \item $N_{anom}$: número de subseries anómalas detectadas en las series de headways.
+                    \item $\overline{dur}$: duración media de las subseries anómalas detectadas.
+                    \item $p_{anom}$: porcentaje de las rodajas que forman todas las subseries que han sido detectadas como anomalías.
+                \end{itemize}
+            \end{block}
+            \vspace{2em}
+            
+        \column{0.5\textwidth}
+            \centering \footnotesize \vspace{1em}
+            Resultados al aplicar nuestro detector de anomalías con \textbf{conf=90\%}:
+            \vspace{1em}
+            \begin{table}
+                \begin{tabular}{@{} lccr @{}}
+                  \toprule
+                  \textbf{dur\textunderscore th} & $N_{anom}$ & $\overline{dur}$ & $p_{anom}$ \\
+                  \midrule
+                  \textbf{1} & 95 & 6,1 & 9,4\% \\
+                  \textbf{2} & 66 & 8,3 & 9,0\% \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            Series 1-D ($N^{sw}_1 = 6138$).
+            
+            \vspace{1em}
+            \begin{table}
+                \begin{tabular}{@{} lccr @{}}
+                  \toprule
+                  \textbf{dur\textunderscore th} & $N_{anom}$ & $\overline{dur}$ & $p_{anom}$ \\
+                  \midrule
+                  \textbf{1} & 79 & 6,0 & 9,8\% \\
+                  \textbf{2} & 54 & 8,3 & 9,3\% \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            Series 2-D ($N^{sw}_2 = 4797$).
+            
+    \end{columns}
+    
+\end{frame}

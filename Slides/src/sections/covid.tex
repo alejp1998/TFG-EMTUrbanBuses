@@ -1,0 +1,105 @@
+
+
+\begin{frame}{Efecto en los tiempos entre paradas y los headways}
+    \metroset{block=fill}
+    
+    \begin{columns}[T]
+        \column{0.4\textwidth}
+            \scriptsize
+            \begin{block}{\scriptsize Separación de los datos}
+                \textbf{- Datos recogidos antes del COVID-19 ($X_{b}$):} del 26 de Febrero al 15 de Marzo.
+                
+                \textbf{- Datos recogidos durante el COVID-19 ($X_{w}$):} del 15 de Marzo al 10 de Abril.
+            \end{block}
+            
+            \scriptsize
+            \begin{block}{\scriptsize Test de hipótesis de Aspin-Welch:}
+                Comprobamos si la distribución de $X_{b}$ se asemeja a la de $X_{w}$:
+                \begin{align*}
+                    H_{0}:\; \mu_b = \mu_w \\
+                    H_{1}:\; \mu_b \neq \mu_w
+                \end{align*}
+            \end{block}
+            
+        \column{0.6\textwidth}
+            \centering \scriptsize \vspace{1em}
+            {\footnotesize Test sobre los tiempos entre paradas}
+            \begin{table}
+                \begin{tabular}{@{} lcccr @{}}
+                  \toprule
+                  $R.V.$ & $n$ & $\overline{x}$ & $s$ & $p-valor$ \\
+                  \midrule
+                  $X_{b}$ & 189 & 139,2 s & 70,0 s &  \\
+                  $X_{w}$ & 228 & 64,1 s & 34,1 s & \multirow{-2}{*}{$\scinot{6.3}{-30}$} \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            
+            \vspace{1em}
+            
+            {\footnotesize Test sobre los headways}
+            \begin{table}
+                \begin{tabular}{@{} lcccr @{}}
+                  \toprule
+                  $R.V.$ & $n$ & $\overline{x}$ & $s$ & $p-valor$ \\
+                  \midrule
+                  $X_{b}$ & 19101 & 606,4 s & 356,8 s &  \\
+                  $X_{w}$ & 18680 & 726,4 s & 329,5 s & \multirow{-2}{*}{$\scinot{4.3}{-249}$} \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            
+            \vspace{1em}
+            
+            {\footnotesize 
+            $\downarrow$ desviaciones estándar
+            \\[1em]
+            $\downarrow$ tiempos entre paradas
+            \\[1em]
+            $\uparrow$ headways
+            }
+    \end{columns}
+    
+\end{frame}
+
+
+\begin{frame}{Efecto en los headways según nuestro detector de anomalías}
+    \metroset{block=fill}
+    \begin{columns}[T]
+        \column{0.5\textwidth}
+            \centering \footnotesize \vspace{1em}
+            Resultados al aplicar nuestro detector de anomalías con  \textbf{conf=90\%}:
+            \vspace{1em}
+            \begin{table}
+                \begin{tabular}{@{} lccr @{}}
+                  \toprule
+                  \textbf{dur\textunderscore th} & $N_{anom}$ & $\overline{dur}$ & $p_{anom}$ \\
+                  \midrule
+                  \textbf{1} & 92 & 4,4 & 3,0\% \\
+                  \textbf{2} & 64 & 6,0 & 2,7\% \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            Series 1-D ($N^{sw}_1 = 13937$).
+            
+            \vspace{1em}
+            \begin{table}
+                \begin{tabular}{@{} lccr @{}}
+                  \toprule
+                  \textbf{dur\textunderscore th} & $N_{anom}$ & $\overline{dur}$ & $p_{anom}$ \\
+                  \midrule
+                  \textbf{1} & 61 & 3,1 & 2,7\% \\
+                  \textbf{2} & 41 & 4,1 & 2,4\% \\
+                  \bottomrule
+                \end{tabular}
+            \end{table}
+            Series 2-D ($N^{sw}_2 = 7093$).
+            
+        \column{0.5\textwidth}
+            \footnotesize Distribución de $N^{sw}_{2}$ antes (azul) y durante (rojo) el COVID-19.
+            \includegraphics[width=1\textwidth]{images/anom2dcovid.png}
+            No se ve afectado por cambios que provocan un comportamiento más regular de los headways.
+            
+            
+    \end{columns}
+\end{frame}

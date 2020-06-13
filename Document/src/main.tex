@@ -1,0 +1,192 @@
+\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{makeidx}
+\usepackage{eurosym}
+\usepackage{enumitem}
+\usepackage[english]{babel}
+\usepackage[nottoc]{tocbibind}
+\usepackage[margin=2cm]{geometry}
+\usepackage{titling}
+
+% Images packages
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{diagbox}
+
+% Change chapter title style
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]
+{\normalfont\Huge\bfseries}{\chaptertitlename\ \thechapter.}{10pt}{}
+\titlespacing{\chapter}{0pt}{0pt}{20pt}
+
+% Images path
+\graphicspath{{./images/}}
+
+% Paquetes Pello (matemáticas y comentarios)
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+% Para hipervínculos
+\usepackage{hyperref}
+\hypersetup{
+    urlcolor=cyan,
+}
+
+
+
+% To make comments
+\usepackage{todonotes}
+\usepackage{soul}
+\usepackage{hyperref}
+\newcommand{\tb}{\textcolor{blue}}
+\newcommand{\tr}{\textcolor{red}}
+\colorlet{RED}{red}
+\newcommand{\tod}{\todo[color=bluep]}
+\newcommand{\todi}{\todo[inline,color=bluep]}
+\newcommand{\tody}{\todo[inline,color=yellow]}
+\definecolor{bluep}{RGB}{3, 252, 244}
+
+\title{Final degree project: Statistical arrival time analysis and anomaly detection in the EMT urban buses}
+\author{Author: Alejandro Jarabo Peñas\\
+Tutor: Pedro José Zufiria Zatarain}
+
+
+\newcommand{\titulo}{Análisis estadístico de tiempos de llegada y detección de anomalías en los buses urbanos de la EMT}
+\newcommand{\titlee}{Statistical arrival time analysis and anomaly detection in the EMT urban buses}
+\newcommand{\me}{Alejandro Jarabo Peñas}
+\newcommand{\ME}{ALEJANDRO JARABO PEÑAS}
+\newcommand{\tutor}{Pedro José Zufiria Zatarain}
+\newcommand{\TUTOR}{PEDRO JOSÉ ZUFIRIA ZATARAIN}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%% NOTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Arrival time
+\newcommand{\runningTime}{\ensuremath{\Delta T_{d,o,k}}}
+
+%Headway
+\newcommand*{\hw}[2]{
+    \Delta T_{b_{#1},b_{#2}}
+}
+
+%Headway
+\newcommand*{\hway}[2]{
+    \Delta T_{#1,#2}
+}
+
+%Scientifical notation
+\newcommand*{\scinot}[2]{
+    #1 \times 10^{#2}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\date{\today}
+\makeindex
+
+
+\begin{document}
+
+\usetikzlibrary{calc}
+
+% FRONT MATTER
+\frontmatter
+
+\include{etsit_template/cover}
+
+\include{etsit_template/grade}
+
+\include{etsit_template/signatures}
+
+\include{etsit_template/acknowledgements}
+
+\include{etsit_template/abstract}
+
+
+\tableofcontents{}
+\addcontentsline{toc}{chapter}{Contents}
+
+\listoffigures
+
+\listoftables
+
+
+%MAIN MATTER
+\mainmatter
+
+
+\chapter{Introduction}
+
+\input{sections/Intro.tex} 
+
+
+\chapter{Available data and their acquisition}
+
+\input{sections/DataAndAcquisition.tex}
+
+
+\chapter{Data analysis and cleansing}
+
+\section{Characterization of the API and the data it provides}
+
+\input{sections/Characterization.tex}
+
+\section{Data cleansing}
+
+\input{sections/DataCleaning.tex} 
+
+
+\chapter{Estimation of the arrival time and position of the buses}
+
+\input{sections/ArrivPosEstimators.tex} 
+
+
+\chapter{Estimation of the running times between stops}
+
+\input{sections/TimesBtStops.tex}
+
+
+\chapter{Definition and estimation of the headways}
+\label{headways}
+
+\input{sections/Headways.tex} 
+
+\newpage
+
+
+\chapter{Real-time anomaly detection on the headways}
+
+\input{sections/Anomalies.tex} 
+
+
+\chapter{Influence of COVID-19}
+
+\input{sections/COVID19.tex}
+
+
+\chapter{Dashboard}
+
+\input{sections/DashServer.tex} 
+
+
+\chapter{Conclusions and future lines of research}
+
+\input{sections/Conclusions.tex} 
+
+\appendix
+
+\input{sections/Appendix.tex}
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+
+\end{document}
